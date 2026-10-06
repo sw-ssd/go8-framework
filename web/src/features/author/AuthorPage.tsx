@@ -20,19 +20,9 @@ export function AuthorPage() {
   const create = useMutation(() => ({
     mutationFn: async () =>
       client.create({
-
-
-        firstname: "",
-
-
-
-        middlename: "",
-
-
-
-        lastname: "",
-
-
+        firstName: "",
+        middleName: "",
+        lastName: "",
       }),
     onSuccess: () => items.refetch(),
   }));

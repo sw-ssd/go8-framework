@@ -4,7 +4,7 @@ package {{.Lower}}
 
 type CreateRequest struct {
 {{- range .Fields }}
-	{{.Name}} {{.GoType}} `json:"{{.Snake}}"{{if eq .GoType "string"}} validate:"required"{{end}}`
+	{{.Name}} {{.GoType}} `json:"{{.Snake}}"{{if and (eq .GoType "string") (not .Optional)}} validate:"required"{{end}}`
 {{- end }}
 }
 

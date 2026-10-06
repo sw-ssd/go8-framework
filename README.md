@@ -160,7 +160,7 @@ connect service (internal/domain/<d>/service)   // validates, maps proto <-> dom
 ent client (s.ent) injected from server
 ```
 
-Chi handles only infrastructure: `/health`, `/version`, `/swagger`, authentication. Each CONNECT service is mounted on the Chi router as an `http.Handler`.
+Chi handles only infrastructure: `/api/health`, `/version`, `/swagger`, authentication. Each CONNECT service is mounted on the Chi router as an `http.Handler`.
 
 # Structure
 
@@ -285,7 +285,7 @@ A cache layer (LRU in-memory or Redis) sits between use case and repository to a
 
 # Swagger docs
 
-Infrastructure routes (health, version, auth) are documented with swag. Enable with `API_RUN_SWAGGER=true`, run `task swagger`, and open `http://localhost:3080/swagger/`.
+Infrastructure routes (health, version, auth) are documented with swag. Enable with `NEWAPI_RUN_SWAGGER=true`, run `task swagger`, and open `http://localhost:3080/swagger/`.
 
 # Testing
 
@@ -341,7 +341,7 @@ The e2e spins up Postgres via testcontainers, runs the API in-process (`server.N
 
 ## Constraints
 
-- **Env vars are `NEWAPI_*`** (`envconfig` prefix `NewAPI`): `NEWAPI_PORT` (default 3080), `NEWAPI_HOST`, `DB_*`, `CORS_ALLOWED_ORIGINS`, `API_RUN_SWAGGER`. `env.example`'s `API_PORT` is wrong and ignored.
+- **Env vars are `NEWAPI_*`** (`envconfig` prefix `NewAPI`): `NEWAPI_PORT` (default 3080), `NEWAPI_HOST`, `DB_*`, `CORS_ALLOWED_ORIGINS`, `NEWAPI_RUN_SWAGGER`. `env.example` previously used `API_*` names that were ignored.
 - **Migrations** (`database/migrations`) use goose: `-- +goose Up/Down` wrapping SQL in `-- +goose StatementBegin/End`; version = unique timestamp prefix. `goose` panics on duplicate versions or unparsed SQL.
 - **CONNECT health** is `GET /api/health` → `{"status":200}` (not `/health`).
 - **CONNECT routing**: register with `r.Handle(path+"*", handler)` where `path` ends in `/`; `r.Handle(path, handler)` strips the prefix and 404s every method.

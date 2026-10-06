@@ -30,9 +30,21 @@ func New(ent *gen.Client) *Service {
 
 // go8cli:impl
 func (s *Service) Create(ctx context.Context, req *connect.Request[go8v1.Create{{.Name}}Request]) (*connect.Response[go8v1.{{.Name}}], error) {
+{{- range .Fields }}
+{{- if eq .GoType "time.Time" }}
+	var {{.Camel}} time.Time
+	if v := req.Msg.Get{{.Name}}(); v != nil {
+		{{.Camel}} = v.AsTime()
+	}
+{{- end }}
+{{- end }}
 	schema, err := s.uc.Create(ctx, &{{.Lower}}.CreateRequest{
 {{- range .Fields }}
+{{- if eq .GoType "time.Time" }}
+		{{.Name}}: {{.Camel}},
+{{- else }}
 		{{.Name}}: {{.ProtoGet}},
+{{- end }}
 {{- end }}
 	})
 	if err != nil {
@@ -73,10 +85,22 @@ func (s *Service) List(ctx context.Context, req *connect.Request[go8v1.List{{.Pl
 }
 
 func (s *Service) Update(ctx context.Context, req *connect.Request[go8v1.Update{{.Name}}Request]) (*connect.Response[go8v1.{{.Name}}], error) {
+{{- range .Fields }}
+{{- if eq .GoType "time.Time" }}
+	var {{.Camel}} time.Time
+	if v := req.Msg.Get{{.Name}}(); v != nil {
+		{{.Camel}} = v.AsTime()
+	}
+{{- end }}
+{{- end }}
 	schema, err := s.uc.Update(ctx, &{{.Lower}}.UpdateRequest{
 		ID: uint64(req.Msg.GetId()),
 {{- range .Fields }}
+{{- if eq .GoType "time.Time" }}
+		{{.Name}}: {{.Camel}},
+{{- else }}
 		{{.Name}}: {{.ProtoGet}},
+{{- end }}
 {{- end }}
 	})
 	if err != nil {
@@ -95,15 +119,20 @@ func (s *Service) Delete(ctx context.Context, req *connect.Request[go8v1.Delete{
 // Register mounts the CONNECT handler on the chi router.
 func Register(ent *gen.Client, r chi.Router, opts ...connect.HandlerOption) {
 	path, handler := go8v1connect.New{{.Name}}ServiceHandler(New(ent), opts...)
-	r.Handle(path, handler)
+	r.Handle(path+"*", handler)
 }
 
 func toProto(s *{{.Lower}}.Schema) *go8v1.{{.Name}} {
-	return &go8v1.{{.Name}}{
+	proto := &go8v1.{{.Name}}{
 		Id: int64(s.ID),
 {{- range .Fields }}
 		{{.ProtoName}}: {{.ProtoAssign}},
 {{- end }}
 		CreatedAt: timestamppb.New(s.CreatedAt),
+		UpdatedAt: timestamppb.New(s.UpdatedAt),
 	}
+	if s.DeletedAt != nil {
+		proto.DeletedAt = timestamppb.New(*s.DeletedAt)
+	}
+	return proto
 }

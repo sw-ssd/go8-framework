@@ -3,14 +3,14 @@ package service
 import (
 	"context"
 
-	"github.com/go-chi/chi/v5"
 	"connectrpc.com/connect"
+	"github.com/go-chi/chi/v5"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"codeberg.org/gmhafiz/go8/ent/gen"
 	go8v1 "codeberg.org/gmhafiz/go8/gen/api/go8/v1"
 	go8v1connect "codeberg.org/gmhafiz/go8/gen/api/go8/v1/go8v1connect"
-	"codeberg.org/gmhafiz/go8/ent/gen"
 	"codeberg.org/gmhafiz/go8/internal/domain/author"
 	"codeberg.org/gmhafiz/go8/internal/domain/author/repository"
 	"codeberg.org/gmhafiz/go8/internal/domain/author/usecase"
@@ -31,9 +31,9 @@ func New(ent *gen.Client) *Service {
 // go8cli:impl
 func (s *Service) Create(ctx context.Context, req *connect.Request[go8v1.CreateAuthorRequest]) (*connect.Response[go8v1.Author], error) {
 	schema, err := s.uc.Create(ctx, &author.CreateRequest{
-		FirstName: req.Msg.GetFirstName(),
+		FirstName:  req.Msg.GetFirstName(),
 		MiddleName: req.Msg.GetMiddleName(),
-		LastName: req.Msg.GetLastName(),
+		LastName:   req.Msg.GetLastName(),
 	})
 	if err != nil {
 		return nil, err
@@ -52,14 +52,14 @@ func (s *Service) Get(ctx context.Context, req *connect.Request[go8v1.GetAuthorR
 func (s *Service) List(ctx context.Context, req *connect.Request[go8v1.ListAuthorsRequest]) (*connect.Response[go8v1.ListAuthorsResponse], error) {
 	f := &author.Filter{
 		Base: filter.Filter{
-			Page:    int(req.Msg.GetPage()),
-			Limit:   int(req.Msg.GetPageSize()),
-			Offset:  int(req.Msg.GetPageSize()) * (int(req.Msg.GetPage()) - 1),
-			Search:  req.Msg.GetSearch() != "",
+			Page:   int(req.Msg.GetPage()),
+			Limit:  int(req.Msg.GetPageSize()),
+			Offset: int(req.Msg.GetPageSize()) * (int(req.Msg.GetPage()) - 1),
+			Search: req.Msg.GetSearch() != "",
 		},
-		FirstName: req.Msg.GetSearch(),
+		FirstName:  req.Msg.GetSearch(),
 		MiddleName: req.Msg.GetSearch(),
-		LastName: req.Msg.GetSearch(),
+		LastName:   req.Msg.GetSearch(),
 	}
 	schemas, total, err := s.uc.List(ctx, f)
 	if err != nil {
@@ -69,15 +69,15 @@ func (s *Service) List(ctx context.Context, req *connect.Request[go8v1.ListAutho
 	for _, sc := range schemas {
 		items = append(items, toProto(sc))
 	}
-	return connect.NewResponse(&go8v1.ListAuthorsResponse{ Authors: items, Total: int32(total) }), nil
+	return connect.NewResponse(&go8v1.ListAuthorsResponse{Authors: items, Total: int32(total)}), nil
 }
 
 func (s *Service) Update(ctx context.Context, req *connect.Request[go8v1.UpdateAuthorRequest]) (*connect.Response[go8v1.Author], error) {
 	schema, err := s.uc.Update(ctx, &author.UpdateRequest{
-		ID: uint64(req.Msg.GetId()),
-		FirstName: req.Msg.GetFirstName(),
+		ID:         uint64(req.Msg.GetId()),
+		FirstName:  req.Msg.GetFirstName(),
 		MiddleName: req.Msg.GetMiddleName(),
-		LastName: req.Msg.GetLastName(),
+		LastName:   req.Msg.GetLastName(),
 	})
 	if err != nil {
 		return nil, err
@@ -99,11 +99,16 @@ func Register(ent *gen.Client, r chi.Router, opts ...connect.HandlerOption) {
 }
 
 func toProto(s *author.Schema) *go8v1.Author {
-	return &go8v1.Author{
-		Id: int64(s.ID),
-		FirstName: s.FirstName,
+	proto := &go8v1.Author{
+		Id:         int64(s.ID),
+		FirstName:  s.FirstName,
 		MiddleName: s.MiddleName,
-		LastName: s.LastName,
-		CreatedAt: timestamppb.New(s.CreatedAt),
+		LastName:   s.LastName,
+		CreatedAt:  timestamppb.New(s.CreatedAt),
+		UpdatedAt:  timestamppb.New(s.UpdatedAt),
 	}
+	if s.DeletedAt != nil {
+		proto.DeletedAt = timestamppb.New(*s.DeletedAt)
+	}
+	return proto
 }

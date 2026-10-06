@@ -2,6 +2,7 @@ import { For } from "solid-js";
 import { useMutation, useQuery } from "@tanstack/solid-query";
 import { createPromiseClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
+import { Timestamp } from "@bufbuild/protobuf";
 import { BookService } from "../../gen/api/go8/v1/book_connect.js";
 
 const transport = createConnectTransport({
@@ -23,12 +24,13 @@ export function BookPage() {
 
 
         title: "",
+        publishedDate: Timestamp.now(),
 
 
 
 
 
-        imageurl: "",
+        imageUrl: "",
 
 
 
@@ -36,7 +38,7 @@ export function BookPage() {
 
 
 
-        authorid: 0,
+        authorId: 0n,
 
 
       }),

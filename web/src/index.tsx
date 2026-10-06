@@ -16,9 +16,9 @@ const rootRoute = createRootRoute({
   component: () => (
     <div>
       <nav style={{ padding: "1rem", display: "flex", gap: "1rem" }}>
-        <Link href="/">Todos</Link>
-        <Link href="/authors">Authors</Link>
-        <Link href="/books">Books</Link>
+        <Link to="/">Todos</Link>
+        <Link to="/authors">Authors</Link>
+        <Link to="/books">Books</Link>
       </nav>
       <Outlet />
     </div>

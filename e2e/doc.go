@@ -6,5 +6,6 @@
 //
 //	go test -tags e2e ./e2e
 //
-// which requires Docker (for the Postgres and browser containers).
+// which requires a container runtime (Docker or Podman) for Postgres. The browser is a
+// native headless Chromium launched by Playwright on the host, not a container.
 package e2e

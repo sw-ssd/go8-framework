@@ -9,21 +9,27 @@ import (
 type Filter struct {
 	Base filter.Filter
 {{- range .Fields }}
+{{- if eq .GoType "string" }}
 	{{.Name}} string `json:"{{.Snake}}"`
+{{- end }}
 {{- end }}
 }
 
 func Filters(queries url.Values) *Filter {
 	f := filter.New(queries)
 {{- range .Fields }}
+{{- if eq .GoType "string" }}
 	if queries.Has("{{.Snake}}") {
 		f.Search = true
 	}
 {{- end }}
+{{- end }}
 	return &Filter{
 		Base: *f,
 {{- range .Fields }}
+{{- if eq .GoType "string" }}
 		{{.Name}}: queries.Get("{{.Snake}}"),
+{{- end }}
 {{- end }}
 	}
 }

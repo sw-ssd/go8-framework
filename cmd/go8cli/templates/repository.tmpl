@@ -98,7 +98,17 @@ func (r *repository) Read(ctx context.Context, id uint64) (*{{.Lower}}.Schema, e
 func (r *repository) Update(ctx context.Context, request *{{.Lower}}.UpdateRequest) (*{{.Lower}}.Schema, error) {
 	update := r.ent.{{.Name}}.UpdateOneID(request.ID)
 {{- range .Fields }}
+{{- if eq .GoType "string" }}
+	if request.{{.Name}} != "" {
+		update = update.Set{{.Name}}(request.{{.Name}})
+	}
+{{- else if eq .GoType "time.Time" }}
+	if !request.{{.Name}}.IsZero() {
+		update = update.Set{{.Name}}(request.{{.Name}})
+	}
+{{- else }}
 	update = update.Set{{.Name}}(request.{{.Name}})
+{{- end }}
 {{- end }}
 	update = update.SetUpdatedAt(time.Now())
 	updated, err := update.Save(ctx)

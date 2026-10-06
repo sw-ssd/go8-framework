@@ -493,8 +493,14 @@ func gracefulShutdown(ctx context.Context, s *Server) error {
 func (s *Server) closeResources(ctx context.Context) {
 	_ = s.sqlx.Close()
 	_ = s.ent.Close()
-	s.cluster.Shutdown(ctx)
-	s.cache.Shutdown(ctx)
+	if s.cluster != nil {
+		s.cluster.Shutdown(ctx)
+	}
+	if s.cache != nil {
+		s.cache.Shutdown(ctx)
+	}
 	s.sessionCloser.StopCleanup()
-	defer s.otlp.Cancel()
+	if s.otlp != nil {
+		s.otlp.Cancel()
+	}
 }

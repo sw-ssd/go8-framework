@@ -9,17 +9,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
+	"golang.org/x/mod/modfile"
 	"gopkg.in/yaml.v3"
 )
 
 //go:embed templates/*.tmpl
 var templateFS embed.FS
 
-const modulePath = "codeberg.org/gmhafiz/go8"
+func modulePath() string {
+	b, err := os.ReadFile("go.mod")
+	if err != nil {
+		return "codeberg.org/gmhafiz/go8"
+	}
+	return modfile.ModulePath(b)
+}
 
 type Field struct {
 	Name        string
@@ -32,8 +40,8 @@ type Field struct {
 	ProtoGet    string
 	ProtoAssign string
 	ProtoName   string
-	TsDefault    string
-	Optional     bool
+	TsDefault   string
+	Optional    bool
 	ProtoNum    int
 	CreateNum   int
 	UpdateNum   int
@@ -53,12 +61,12 @@ type Data struct {
 
 // targets per subcommand
 var targetsFor = map[string][]string{
-	"model":             {"ent", "migration", "model", "request", "filters"},
-	"create":            {"usecase", "repository", "service"},
-	"read":              {"usecase", "repository", "service"},
-	"update":            {"usecase", "repository", "service"},
-	"delete":            {"usecase", "repository", "service"},
-	"resource":          {"proto", "ent", "migration", "model", "request", "filters", "usecase", "repository", "service", "frontend"},
+	"model":    {"ent", "migration", "model", "request", "filters"},
+	"create":   {"usecase", "repository", "service"},
+	"read":     {"usecase", "repository", "service"},
+	"update":   {"usecase", "repository", "service"},
+	"delete":   {"usecase", "repository", "service"},
+	"resource": {"proto", "ent", "migration", "model", "request", "filters", "usecase", "repository", "service", "frontend"},
 }
 
 // output path per target
@@ -69,7 +77,7 @@ func outPath(target string, d *Data) string {
 	case "ent":
 		return filepath.Join("ent", "schema", d.Lower+".go")
 	case "migration":
-		ts := time.Now().Format("20060102150405")
+		ts := strconv.FormatInt(time.Now().UnixNano(), 10)
 		return filepath.Join("database", "migrations", ts+"_create_"+d.PluralLower+".sql")
 	case "model":
 		return filepath.Join("internal", "domain", d.Lower, "model.go")
@@ -120,6 +128,7 @@ func runGenerate(sub string, args []string) {
 	fields := &fieldList{}
 	fs.Var(fields, "field", "field as name:type (repeatable), e.g. --field title:string --field priority:int")
 	interactive := fs.Bool("interactive", false, "prompt for name and fields")
+	templates := fs.String("templates", "", "path to custom templates directory (also set via GO8_TEMPLATES)")
 
 	rest := args
 	namePos := ""
@@ -128,6 +137,9 @@ func runGenerate(sub string, args []string) {
 		rest = args[1:]
 	}
 	fs.Parse(rest)
+	if *templates != "" {
+		os.Setenv("GO8_TEMPLATES", *templates)
+	}
 
 	resName := *name
 	if resName == "" {
@@ -297,7 +309,7 @@ func appendToDomains(d *Data) {
 		fail("read %s: %v", path, err)
 	}
 	content := string(b)
-	importLine := fmt.Sprintf("\t%sService \"%s/internal/domain/%s/service\"", d.Name, modulePath, d.Lower)
+	importLine := fmt.Sprintf("\t%sService \"%s/internal/domain/%s/service\"", d.Name, modulePath(), d.Lower)
 	entryLine := fmt.Sprintf("\t{Name: %q, Register: %sService.Register},", d.Lower, d.Name)
 	if strings.Contains(content, fmt.Sprintf("internal/domain/%s/service", d.Lower)) {
 		return // already registered (idempotent)
@@ -369,6 +381,7 @@ func runCustomTemplate(tmplName string, args []string) {
 	name := fs.String("name", "", "resource name")
 	fields := &fieldList{}
 	fs.Var(fields, "field", "field as name:type")
+	templates := fs.String("templates", "", "path to custom templates directory (also set via GO8_TEMPLATES)")
 	rest := args
 	namePos := ""
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
@@ -376,6 +389,9 @@ func runCustomTemplate(tmplName string, args []string) {
 		rest = args[1:]
 	}
 	fs.Parse(rest)
+	if *templates != "" {
+		os.Setenv("GO8_TEMPLATES", *templates)
+	}
 	resName := *name
 	if resName == "" {
 		resName = namePos
@@ -400,7 +416,13 @@ func runCustomTemplate(tmplName string, args []string) {
 
 type fieldList []Field
 
-func (f *fieldList) String() string { var parts []string; for _, fl := range *f { parts = append(parts, fl.Name) }; return strings.Join(parts, ", ") }
+func (f *fieldList) String() string {
+	var parts []string
+	for _, fl := range *f {
+		parts = append(parts, fl.Name)
+	}
+	return strings.Join(parts, ", ")
+}
 func (f *fieldList) Set(v string) error {
 	fld, err := parseField(v)
 	if err != nil {
@@ -498,6 +520,7 @@ func camel(s string) string {
 	}
 	return b.String()
 }
+
 // simplePascal is protoc-gen-go style PascalCase (no initialism expansion).
 func simplePascal(s string) string {
 	parts := strings.FieldsFunc(s, func(r rune) bool { return r == '_' || r == '-' || r == ' ' })
@@ -591,10 +614,10 @@ Types: string | int | int64 | bool | float`)
 }
 
 type Manifest struct {
-	Name        string  `yaml:"name"`
-	Description string  `yaml:"description"`
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description"`
 	Prompts     []Prompt `yaml:"prompts"`
-	Steps       []Step  `yaml:"steps"`
+	Steps       []Step   `yaml:"steps"`
 }
 type Prompt struct {
 	Name    string `yaml:"name"`

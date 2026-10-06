@@ -2,15 +2,16 @@ package service
 
 import (
 	"context"
+	"time"
 
-	"github.com/go-chi/chi/v5"
 	"connectrpc.com/connect"
+	"github.com/go-chi/chi/v5"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"codeberg.org/gmhafiz/go8/ent/gen"
 	go8v1 "codeberg.org/gmhafiz/go8/gen/api/go8/v1"
 	go8v1connect "codeberg.org/gmhafiz/go8/gen/api/go8/v1/go8v1connect"
-	"codeberg.org/gmhafiz/go8/ent/gen"
 	"codeberg.org/gmhafiz/go8/internal/domain/book"
 	"codeberg.org/gmhafiz/go8/internal/domain/book/repository"
 	"codeberg.org/gmhafiz/go8/internal/domain/book/usecase"
@@ -30,12 +31,16 @@ func New(ent *gen.Client) *Service {
 
 // go8cli:impl
 func (s *Service) Create(ctx context.Context, req *connect.Request[go8v1.CreateBookRequest]) (*connect.Response[go8v1.Book], error) {
+	var publishedDate time.Time
+	if pd := req.Msg.GetPublishedDate(); pd != nil {
+		publishedDate = pd.AsTime()
+	}
 	schema, err := s.uc.Create(ctx, &book.CreateRequest{
-		Title: req.Msg.GetTitle(),
-		PublishedDate: req.Msg.GetPublishedDate().AsTime(),
-		ImageURL: req.Msg.GetImageUrl(),
-		Description: req.Msg.GetDescription(),
-		AuthorID: req.Msg.GetAuthorId(),
+		Title:         req.Msg.GetTitle(),
+		PublishedDate: publishedDate,
+		ImageURL:      req.Msg.GetImageUrl(),
+		Description:   req.Msg.GetDescription(),
+		AuthorID:      req.Msg.GetAuthorId(),
 	})
 	if err != nil {
 		return nil, err
@@ -54,16 +59,16 @@ func (s *Service) Get(ctx context.Context, req *connect.Request[go8v1.GetBookReq
 func (s *Service) List(ctx context.Context, req *connect.Request[go8v1.ListBooksRequest]) (*connect.Response[go8v1.ListBooksResponse], error) {
 	f := &book.Filter{
 		Base: filter.Filter{
-			Page:    int(req.Msg.GetPage()),
-			Limit:   int(req.Msg.GetPageSize()),
-			Offset:  int(req.Msg.GetPageSize()) * (int(req.Msg.GetPage()) - 1),
-			Search:  req.Msg.GetSearch() != "",
+			Page:   int(req.Msg.GetPage()),
+			Limit:  int(req.Msg.GetPageSize()),
+			Offset: int(req.Msg.GetPageSize()) * (int(req.Msg.GetPage()) - 1),
+			Search: req.Msg.GetSearch() != "",
 		},
-		Title: req.Msg.GetSearch(),
+		Title:         req.Msg.GetSearch(),
 		PublishedDate: req.Msg.GetSearch(),
-		ImageURL: req.Msg.GetSearch(),
-		Description: req.Msg.GetSearch(),
-		AuthorID: req.Msg.GetSearch(),
+		ImageURL:      req.Msg.GetSearch(),
+		Description:   req.Msg.GetSearch(),
+		AuthorID:      req.Msg.GetSearch(),
 	}
 	schemas, total, err := s.uc.List(ctx, f)
 	if err != nil {
@@ -73,17 +78,21 @@ func (s *Service) List(ctx context.Context, req *connect.Request[go8v1.ListBooks
 	for _, sc := range schemas {
 		items = append(items, toProto(sc))
 	}
-	return connect.NewResponse(&go8v1.ListBooksResponse{ Books: items, Total: int32(total) }), nil
+	return connect.NewResponse(&go8v1.ListBooksResponse{Books: items, Total: int32(total)}), nil
 }
 
 func (s *Service) Update(ctx context.Context, req *connect.Request[go8v1.UpdateBookRequest]) (*connect.Response[go8v1.Book], error) {
+	var publishedDate time.Time
+	if pd := req.Msg.GetPublishedDate(); pd != nil {
+		publishedDate = pd.AsTime()
+	}
 	schema, err := s.uc.Update(ctx, &book.UpdateRequest{
-		ID: uint64(req.Msg.GetId()),
-		Title: req.Msg.GetTitle(),
-		PublishedDate: req.Msg.GetPublishedDate().AsTime(),
-		ImageURL: req.Msg.GetImageUrl(),
-		Description: req.Msg.GetDescription(),
-		AuthorID: req.Msg.GetAuthorId(),
+		ID:            uint64(req.Msg.GetId()),
+		Title:         req.Msg.GetTitle(),
+		PublishedDate: publishedDate,
+		ImageURL:      req.Msg.GetImageUrl(),
+		Description:   req.Msg.GetDescription(),
+		AuthorID:      req.Msg.GetAuthorId(),
 	})
 	if err != nil {
 		return nil, err
@@ -105,13 +114,18 @@ func Register(ent *gen.Client, r chi.Router, opts ...connect.HandlerOption) {
 }
 
 func toProto(s *book.Schema) *go8v1.Book {
-	return &go8v1.Book{
-		Id: int64(s.ID),
-		Title: s.Title,
+	proto := &go8v1.Book{
+		Id:            int64(s.ID),
+		Title:         s.Title,
 		PublishedDate: timestamppb.New(s.PublishedDate),
-		ImageUrl: s.ImageURL,
-		Description: s.Description,
-		AuthorId: s.AuthorID,
-		CreatedAt: timestamppb.New(s.CreatedAt),
+		ImageUrl:      s.ImageURL,
+		Description:   s.Description,
+		AuthorId:      s.AuthorID,
+		CreatedAt:     timestamppb.New(s.CreatedAt),
+		UpdatedAt:     timestamppb.New(s.UpdatedAt),
 	}
+	if s.DeletedAt != nil {
+		proto.DeletedAt = timestamppb.New(*s.DeletedAt)
+	}
+	return proto
 }
