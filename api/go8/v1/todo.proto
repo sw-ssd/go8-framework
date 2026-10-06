@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package go8.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message Todo {
+  int64 id = 1;
+  string title = 2;
+  bool done = 3;
+  int32 priority = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message CreateTodoRequest {
+  string title = 1;
+  int32 priority = 2;
+}
+
+message GetTodoRequest {
+  int64 id = 1;
+}
+
+message ListTodosRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string search = 3;
+}
+
+message ListTodosResponse {
+  repeated Todo todos = 1;
+  int32 total = 2;
+}
+
+message UpdateTodoRequest {
+  int64 id = 1;
+  string title = 2;
+  bool done = 3;
+  int32 priority = 4;
+}
+
+message DeleteTodoRequest {
+  int64 id = 1;
+}
+
+// TodoService is the CONNECT RPC service for the todo resource.
+service TodoService {
+  rpc Create(CreateTodoRequest) returns (Todo);
+  rpc Get(GetTodoRequest) returns (Todo);
+  rpc List(ListTodosRequest) returns (ListTodosResponse);
+  rpc Update(UpdateTodoRequest) returns (Todo);
+  rpc Delete(DeleteTodoRequest) returns (google.protobuf.Empty);
+}

@@ -39,6 +39,7 @@ require (
 
 require (
 	ariga.io/atlas v1.3.0 // indirect
+	connectrpc.com/connect v1.21.0 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect

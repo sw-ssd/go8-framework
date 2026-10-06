@@ -12,6 +12,10 @@ tasks:
     desc: Lists available commands
     cmds:
       - task -l
+  gen:
+    desc: Generate proto code (Go + frontend TS) via buf; needs protoc-gen-go/protoc-gen-connect-go (and -es/-connect-web for web) on PATH
+    cmds:
+      - export PATH="$PATH:$(go env GOPATH)/bin" && buf generate
 
   migrate:create:
     desc: Creates .sql migration files (Up and Down). Set name by appending with 'NAME=name_of_file'

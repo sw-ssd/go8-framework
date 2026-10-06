@@ -1,5 +1,7 @@
 ariga.io/atlas v1.3.0 h1:/ZQLypoRURfNO0VJmXUNz8k6lGoeJLDPlSOZOhxG/1U=
 ariga.io/atlas v1.3.0/go.mod h1:v8ltuOKxFAU8ZF33HNfQs1iRWKuP3hJfu+dU0VE5O0Y=
+connectrpc.com/connect v1.21.0 h1:LhqSJt7jHf5NJBo9Jq/t/9FjcYAideif0mg+qe2jCUs=
+connectrpc.com/connect v1.21.0/go.mod h1:A2ygJrukXwWy32vkCAAHNVguZrqZ+jeZ9rGRnGR4dN4=
 dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
 dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 entgo.io/ent v0.14.6 h1:/f2696BpwuWAEEG6PVGWflg6+Inrpq4pRWuNlWz/Skk=

@@ -1,0 +1,21 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: codeberg.org/gmhafiz/go8/gen
+plugins:
+  # 本地安裝（go install）的 plugin 二進位，避免 BSR 限速；PATH 需含 $(go env GOPATH)/bin
+  # buf 會以 "protoc-gen-<name>" 查找，故這裡填去掉前綴的後綴
+  - plugin: go
+    out: gen
+    opt: paths=source_relative
+  - plugin: connect-go
+    out: gen
+    opt: paths=source_relative
+  # 前端 TS 產出於 P1.7 再加入（需 protoc-gen-es + protoc-gen-connect-web 本地安裝）：
+  # - plugin: es
+  #   out: web/src/gen
+  #   opt: paths=source_relative
+  # - plugin: connect-web
+  #   out: web/src/gen
+  #   opt: paths=source_relative
