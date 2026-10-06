@@ -1,0 +1,503 @@
+basePath: /
+definitions:
+  author.Book:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      published_date:
+        type: string
+      title:
+        type: string
+    required:
+    - description
+    - published_date
+    - title
+    type: object
+  author.CreateRequest:
+    properties:
+      books:
+        items:
+          $ref: '#/definitions/author.Book'
+        type: array
+      first_name:
+        type: string
+      last_name:
+        type: string
+      middle_name:
+        type: string
+    required:
+    - first_name
+    - last_name
+    type: object
+  author.GetResponse:
+    properties:
+      books:
+        items:
+          $ref: '#/definitions/book.Schema'
+        type: array
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      middle_name:
+        type: string
+    type: object
+  author.UpdateRequest:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      middle_name:
+        type: string
+    type: object
+  book.CreateRequest:
+    properties:
+      description:
+        type: string
+      image_url:
+        type: string
+      published_date:
+        type: string
+      title:
+        type: string
+    required:
+    - description
+    - published_date
+    - title
+    type: object
+  book.Res:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      published_date:
+        type: string
+      title:
+        type: string
+    type: object
+  book.Schema:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      imageURL:
+        type: string
+      publishedDate:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  book.UpdateRequest:
+    properties:
+      description:
+        type: string
+      image_url:
+        type: string
+      published_date:
+        type: string
+      title:
+        type: string
+    required:
+    - description
+    - published_date
+    - title
+    type: object
+  gen.Author:
+    properties:
+      edges:
+        allOf:
+        - $ref: '#/definitions/gen.AuthorEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the AuthorQuery when eager-loading is set.
+      first_name:
+        description: FirstName holds the value of the "first_name" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: integer
+      last_name:
+        description: LastName holds the value of the "last_name" field.
+        type: string
+      middle_name:
+        description: MiddleName holds the value of the "middle_name" field.
+        type: string
+    type: object
+  gen.AuthorEdges:
+    properties:
+      books:
+        description: Books holds the value of the books edge.
+        items:
+          $ref: '#/definitions/gen.Book'
+        type: array
+    type: object
+  gen.Book:
+    properties:
+      edges:
+        allOf:
+        - $ref: '#/definitions/gen.BookEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the BookQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      image_url:
+        description: ImageURL holds the value of the "image_url" field.
+        type: string
+      published_date:
+        description: PublishedDate holds the value of the "published_date" field.
+        type: string
+      title:
+        description: Title holds the value of the "title" field.
+        type: string
+    type: object
+  gen.BookEdges:
+    properties:
+      authors:
+        description: Authors holds the value of the authors edge.
+        items:
+          $ref: '#/definitions/gen.Author'
+        type: array
+    type: object
+  respond.Meta:
+    properties:
+      size:
+        type: integer
+      total:
+        type: integer
+    type: object
+  respond.Standard:
+    properties:
+      data: {}
+      meta:
+        $ref: '#/definitions/respond.Meta'
+    type: object
+host: localhost:3080
+info:
+  contact:
+    email: email@example.com
+    name: User Name
+    url: https://github.com/gmhafiz/go8
+  description: Go + Postgres + Chi router + sqlx + ent + Testing starter kit for API
+    development.
+  title: Go8
+  version: 0.1.0
+paths:
+  /api/health:
+    get:
+      description: Hits this API to see if API is running in the server
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+      summary: Checks if API is up
+  /api/health/readiness:
+    get:
+      description: Hits this API to see if both API and Database are running in the
+        server
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+      summary: Checks if both API and Database are up
+  /api/v1/author:
+    get:
+      consumes:
+      - application/json
+      description: Lists all authors. By default, it gets first page with 30 items.
+      parameters:
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: limit of result
+        in: query
+        name: limit
+        type: string
+      - description: result offset
+        in: query
+        name: offset
+        type: string
+      - description: search by first_name
+        in: query
+        name: first_name
+        type: string
+      - description: search by last_name
+        in: query
+        name: last_name
+        type: string
+      - description: sort by fields name. E.g. first_name,asc
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/respond.Standard'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Shows all authors
+    post:
+      consumes:
+      - application/json
+      description: Create an author using JSON payload
+      parameters:
+      - description: Create an author using the following format
+        in: body
+        name: Author
+        required: true
+        schema:
+          $ref: '#/definitions/author.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/author.GetResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create an Author
+  /api/v1/author/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an author by its id.
+      parameters:
+      - description: author ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ok
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete an Author
+    get:
+      consumes:
+      - application/json
+      description: Get an author by its id.
+      parameters:
+      - description: author ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gen.Author'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get an Author
+    put:
+      consumes:
+      - application/json
+      description: Update an author by its model.
+      parameters:
+      - description: Author Request
+        in: body
+        name: Author
+        required: true
+        schema:
+          $ref: '#/definitions/author.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gen.Author'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update an Author
+  /api/v1/book:
+    get:
+      consumes:
+      - application/json
+      description: Lists all books. By default, it gets first page with 30 items.
+      parameters:
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: size of result
+        in: query
+        name: size
+        type: string
+      - description: search by title
+        in: query
+        name: title
+        type: string
+      - description: search by description
+        in: query
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/book.Res'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Shows all books
+    post:
+      consumes:
+      - application/json
+      description: Create a book using JSON payload
+      parameters:
+      - description: Create a book using the following format
+        in: body
+        name: Book
+        required: true
+        schema:
+          $ref: '#/definitions/book.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/book.Res'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a Book
+  /api/v1/book/{bookID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a book by its id.
+      parameters:
+      - description: book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ok
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a Book
+    get:
+      consumes:
+      - application/json
+      description: Get a book by its id.
+      parameters:
+      - description: book ID
+        in: path
+        name: bookID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/book.Res'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get a Book
+    put:
+      consumes:
+      - application/json
+      description: Update a book by its model.
+      parameters:
+      - description: Book UpdateRequest
+        in: body
+        name: Book
+        required: true
+        schema:
+          $ref: '#/definitions/book.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/book.Res'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a Book
+swagger: "2.0"

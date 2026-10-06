@@ -1,0 +1,52 @@
+# Examples of using this resource API
+# for vscode users, install `REST Client` to use these examples.
+
+### Get List author, by default gets the first 10 author when ordered desc
+# curl -X GET 'http://localhost:3080/api/v1/author'
+GET http://localhost:3080/api/v1/author
+Accept: application/json
+
+###
+
+
+### Get paginated author
+# curl -X GET 'http://localhost:3080/api/v1/author?page=2&size=10'
+GET http://localhost:3080/api/v1/author?page=1&size=10
+Accept: application/json
+
+### Get paginated author and sort by last name, asc
+# curl -X GET 'http://localhost:3080/api/v1/author?page=2&size=10'
+GET http://localhost:3080/api/v1/author?page=1&size=10&sort=last_name,asc
+Accept: application/json
+
+### Create a new resource
+# curl -X POST 'http://localhost:3080/api/v1/author' --header 'Authorization: Bearer INSERT_JWT' --header 'Content-Type: application/json' --data-raw '{"first_name": "First", "last_name": "Last"}'
+POST http://localhost:3080/api/v1/author
+Content-Type: application/json
+
+{
+  "first_name": "First",
+  "last_name": "Last"
+}
+
+
+### Get one resource
+# curl -X GET 'http://localhost:3080/api/v1/author/1
+GET http://localhost:3080/api/v1/author/1
+Accept: application/json
+
+
+### Updates a new resource
+# curl -X PUT 'http://localhost:3080/api/v1/author' --header 'Authorization: Bearer INSERT_JWT' --header 'Content-Type: application/json' --data-raw ''{"first_name": "First", "last_name": "Last Updated"}'
+PUT  http://localhost:3080/api/v1/author/1
+Content-Type: application/json
+
+{
+  "first_name": "First",
+  "last_name": "Last Updated"
+}
+
+### Delete a resource
+# curl -X DELETE 'http://localhost:3080/api/v1/author/1
+DELETE http://localhost:3080/api/v1/author/1
+Accept: application/json
