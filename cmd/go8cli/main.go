@@ -31,7 +31,9 @@ type Field struct {
 	Column      string
 	ProtoGet    string
 	ProtoAssign string
+	ProtoName   string
 	TsDefault    string
+	Optional     bool
 	ProtoNum    int
 	CreateNum   int
 	UpdateNum   int
@@ -43,6 +45,7 @@ type Data struct {
 	Plural       string
 	PluralLower  string
 	Fields       []Field
+	HasDate      bool
 	CreatedAtNum int
 	UpdatedAtNum int
 	DeletedAtNum int
@@ -193,18 +196,15 @@ func buildData(name string, fields []Field) Data {
 		fields[i].ProtoNum = i + 2
 		fields[i].CreateNum = i + 1
 		fields[i].UpdateNum = i + 2
-		fields[i].Camel = lowerFirst(fields[i].Name)
+		fields[i].Camel = camel(fields[i].Name)
+		if fields[i].GoType == "time.Time" {
+			data.HasDate = true
+		}
 	}
 	data.CreatedAtNum = n + 2
 	data.UpdatedAtNum = n + 3
 	data.DeletedAtNum = n + 4
 	return data
-}
-func lowerFirst(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToLower(s[:1]) + s[1:]
 }
 
 func renderTarget(target string, d *Data) {
@@ -411,7 +411,13 @@ func (f *fieldList) Set(v string) error {
 }
 
 func parseField(s string) (Field, error) {
-	parts := strings.SplitN(s, ":", 2)
+	optional := false
+	raw := s
+	if strings.HasSuffix(raw, "?") {
+		optional = true
+		raw = strings.TrimSuffix(raw, "?")
+	}
+	parts := strings.SplitN(raw, ":", 2)
 	if len(parts) != 2 {
 		return Field{}, fmt.Errorf("expected name:type")
 	}
@@ -419,27 +425,81 @@ func parseField(s string) (Field, error) {
 	if name == "" {
 		return Field{}, fmt.Errorf("empty field name")
 	}
-	return fieldType(name, snake(parts[0]), parts[1])
+	return fieldType(name, snake(parts[0]), parts[1], optional)
 }
 
-func fieldType(name, snakeName, typ string) (Field, error) {
+func fieldType(name, snakeName, typ string, optional bool) (Field, error) {
+	protoName := simplePascal(snakeName)
+	base := func(goType, protoType, entType, column, protoGet, protoAssign, tsDefault string) Field {
+		return Field{
+			Name: name, Snake: snakeName, GoType: goType, ProtoType: protoType,
+			EntType: entType, Column: column, ProtoGet: protoGet, ProtoAssign: protoAssign,
+			ProtoName: protoName, TsDefault: tsDefault, Optional: optional,
+		}
+	}
 	switch typ {
 	case "string":
-		return Field{Name: name, Snake: snakeName, GoType: "string", ProtoType: "string", EntType: "String", Column: "TEXT", ProtoGet: "req.Msg.Get" + name + "()", ProtoAssign: "s." + name, TsDefault: `""`}, nil
+		return base("string", "string", "String", "TEXT", "req.Msg.Get"+protoName+"()", "s."+name, `""`), nil
 	case "int":
-		return Field{Name: name, Snake: snakeName, GoType: "int", ProtoType: "int32", EntType: "Int", Column: "INTEGER", ProtoGet: "int(req.Msg.Get" + name + "())", ProtoAssign: "int32(s." + name + ")", TsDefault: "0"}, nil
+		return base("int", "int32", "Int", "INTEGER", "int(req.Msg.Get"+protoName+"())", "int32(s."+name+")", "0"), nil
 	case "int64":
-		return Field{Name: name, Snake: snakeName, GoType: "int64", ProtoType: "int64", EntType: "Int64", Column: "BIGINT", ProtoGet: "req.Msg.Get" + name + "()", ProtoAssign: "s." + name, TsDefault: "0"}, nil
+		return base("int64", "int64", "Int64", "BIGINT", "req.Msg.Get"+protoName+"()", "s."+name, "0"), nil
 	case "bool":
-		return Field{Name: name, Snake: snakeName, GoType: "bool", ProtoType: "bool", EntType: "Bool", Column: "BOOLEAN", ProtoGet: "req.Msg.Get" + name + "()", ProtoAssign: "s." + name, TsDefault: "false"}, nil
+		return base("bool", "bool", "Bool", "BOOLEAN", "req.Msg.Get"+protoName+"()", "s."+name, "false"), nil
 	case "float":
-		return Field{Name: name, Snake: snakeName, GoType: "float64", ProtoType: "float", EntType: "Float64", Column: "DOUBLE PRECISION", ProtoGet: "float64(req.Msg.Get" + name + "())", ProtoAssign: "float32(s." + name + ")", TsDefault: "0"}, nil
+		return base("float64", "float", "Float64", "DOUBLE PRECISION", "float64(req.Msg.Get"+protoName+"())", "float32(s."+name+")", "0"), nil
+	case "date", "time", "datetime":
+		return base("time.Time", "google.protobuf.Timestamp", "Time", "TIMESTAMPTZ", "req.Msg.Get"+protoName+"().AsTime()", "timestamppb.New(s."+name+")", "new Date(0)"), nil
 	default:
-		return Field{}, fmt.Errorf("unsupported type %q (string|int|int64|bool|float)", typ)
+		return Field{}, fmt.Errorf("unsupported type %q (string|int|int64|bool|float|date)", typ)
 	}
 }
 
+var initialisms = map[string]string{
+	"acl": "ACL", "api": "API", "ascii": "ASCII", "cpu": "CPU", "css": "CSS",
+	"dns": "DNS", "eof": "EOF", "guid": "GUID", "html": "HTML", "http": "HTTP",
+	"https": "HTTPS", "id": "ID", "ip": "IP", "json": "JSON", "lhs": "LHS",
+	"qps": "QPS", "ram": "RAM", "rhs": "RHS", "rpc": "RPC", "sla": "SLA",
+	"smtp": "SMTP", "sql": "SQL", "ssh": "SSH", "tcp": "TCP", "tls": "TLS",
+	"ttl": "TTL", "udp": "UDP", "ui": "UI", "uid": "UID", "uuid": "UUID",
+	"uri": "URI", "url": "URL", "utf8": "UTF8", "vm": "VM", "xml": "XML",
+	"xmpp": "XMPP", "xsrf": "XSRF", "xss": "XSS",
+}
+
 func pascal(s string) string {
+	parts := strings.FieldsFunc(s, func(r rune) bool { return r == '_' || r == '-' || r == ' ' })
+	var b strings.Builder
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		if up, ok := initialisms[strings.ToLower(p)]; ok {
+			b.WriteString(up)
+			continue
+		}
+		b.WriteString(strings.ToUpper(p[:1]) + p[1:])
+	}
+	return b.String()
+}
+
+// camel produces protobuf-es style camelCase (e.g. image_url -> imageUrl).
+func camel(s string) string {
+	parts := strings.FieldsFunc(s, func(r rune) bool { return r == '_' || r == '-' || r == ' ' })
+	var b strings.Builder
+	for i, p := range parts {
+		if p == "" {
+			continue
+		}
+		if i == 0 {
+			b.WriteString(strings.ToLower(p))
+		} else {
+			b.WriteString(strings.ToUpper(p[:1]) + strings.ToLower(p[1:]))
+		}
+	}
+	return b.String()
+}
+// simplePascal is protoc-gen-go style PascalCase (no initialism expansion).
+func simplePascal(s string) string {
 	parts := strings.FieldsFunc(s, func(r rune) bool { return r == '_' || r == '-' || r == ' ' })
 	var b strings.Builder
 	for _, p := range parts {

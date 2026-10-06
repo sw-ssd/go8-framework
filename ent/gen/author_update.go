@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"codeberg.org/gmhafiz/go8/ent/gen/author"
-	"codeberg.org/gmhafiz/go8/ent/gen/book"
 	"codeberg.org/gmhafiz/go8/ent/gen/predicate"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -137,45 +136,9 @@ func (_u *AuthorUpdate) ClearDeletedAt() *AuthorUpdate {
 	return _u
 }
 
-// AddBookIDs adds the "books" edge to the Book entity by IDs.
-func (_u *AuthorUpdate) AddBookIDs(ids ...uint64) *AuthorUpdate {
-	_u.mutation.AddBookIDs(ids...)
-	return _u
-}
-
-// AddBooks adds the "books" edges to the Book entity.
-func (_u *AuthorUpdate) AddBooks(v ...*Book) *AuthorUpdate {
-	ids := make([]uint64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddBookIDs(ids...)
-}
-
 // Mutation returns the AuthorMutation object of the builder.
 func (_u *AuthorUpdate) Mutation() *AuthorMutation {
 	return _u.mutation
-}
-
-// ClearBooks clears all "books" edges to the Book entity.
-func (_u *AuthorUpdate) ClearBooks() *AuthorUpdate {
-	_u.mutation.ClearBooks()
-	return _u
-}
-
-// RemoveBookIDs removes the "books" edge to Book entities by IDs.
-func (_u *AuthorUpdate) RemoveBookIDs(ids ...uint64) *AuthorUpdate {
-	_u.mutation.RemoveBookIDs(ids...)
-	return _u
-}
-
-// RemoveBooks removes "books" edges to Book entities.
-func (_u *AuthorUpdate) RemoveBooks(v ...*Book) *AuthorUpdate {
-	ids := make([]uint64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveBookIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -243,51 +206,6 @@ func (_u *AuthorUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(author.FieldDeletedAt, field.TypeTime)
-	}
-	if _u.mutation.BooksCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   author.BooksTable,
-			Columns: author.BooksPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(book.FieldID, field.TypeUint64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedBooksIDs(); len(nodes) > 0 && !_u.mutation.BooksCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   author.BooksTable,
-			Columns: author.BooksPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(book.FieldID, field.TypeUint64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.BooksIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   author.BooksTable,
-			Columns: author.BooksPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(book.FieldID, field.TypeUint64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -417,45 +335,9 @@ func (_u *AuthorUpdateOne) ClearDeletedAt() *AuthorUpdateOne {
 	return _u
 }
 
-// AddBookIDs adds the "books" edge to the Book entity by IDs.
-func (_u *AuthorUpdateOne) AddBookIDs(ids ...uint64) *AuthorUpdateOne {
-	_u.mutation.AddBookIDs(ids...)
-	return _u
-}
-
-// AddBooks adds the "books" edges to the Book entity.
-func (_u *AuthorUpdateOne) AddBooks(v ...*Book) *AuthorUpdateOne {
-	ids := make([]uint64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddBookIDs(ids...)
-}
-
 // Mutation returns the AuthorMutation object of the builder.
 func (_u *AuthorUpdateOne) Mutation() *AuthorMutation {
 	return _u.mutation
-}
-
-// ClearBooks clears all "books" edges to the Book entity.
-func (_u *AuthorUpdateOne) ClearBooks() *AuthorUpdateOne {
-	_u.mutation.ClearBooks()
-	return _u
-}
-
-// RemoveBookIDs removes the "books" edge to Book entities by IDs.
-func (_u *AuthorUpdateOne) RemoveBookIDs(ids ...uint64) *AuthorUpdateOne {
-	_u.mutation.RemoveBookIDs(ids...)
-	return _u
-}
-
-// RemoveBooks removes "books" edges to Book entities.
-func (_u *AuthorUpdateOne) RemoveBooks(v ...*Book) *AuthorUpdateOne {
-	ids := make([]uint64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveBookIDs(ids...)
 }
 
 // Where appends a list predicates to the AuthorUpdate builder.
@@ -553,51 +435,6 @@ func (_u *AuthorUpdateOne) sqlSave(ctx context.Context) (_node *Author, err erro
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(author.FieldDeletedAt, field.TypeTime)
-	}
-	if _u.mutation.BooksCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   author.BooksTable,
-			Columns: author.BooksPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(book.FieldID, field.TypeUint64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedBooksIDs(); len(nodes) > 0 && !_u.mutation.BooksCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   author.BooksTable,
-			Columns: author.BooksPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(book.FieldID, field.TypeUint64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.BooksIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   author.BooksTable,
-			Columns: author.BooksPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(book.FieldID, field.TypeUint64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Author{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -102,7 +102,7 @@ func toProto(s *{{.Lower}}.Schema) *go8v1.{{.Name}} {
 	return &go8v1.{{.Name}}{
 		Id: int64(s.ID),
 {{- range .Fields }}
-		{{.Name}}: {{.ProtoAssign}},
+		{{.ProtoName}}: {{.ProtoAssign}},
 {{- end }}
 		CreatedAt: timestamppb.New(s.CreatedAt),
 	}

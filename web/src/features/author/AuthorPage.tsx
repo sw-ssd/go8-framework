@@ -1,0 +1,60 @@
+import { For } from "solid-js";
+import { useMutation, useQuery } from "@tanstack/solid-query";
+import { createPromiseClient } from "@connectrpc/connect";
+import { createConnectTransport } from "@connectrpc/connect-web";
+import { AuthorService } from "../../gen/api/go8/v1/author_connect.js";
+
+const transport = createConnectTransport({
+  baseUrl: (import.meta.env.VITE_API_BASE as string) ?? "http://localhost:8080",
+});
+const client = createPromiseClient(AuthorService, transport);
+
+export function AuthorPage() {
+  const items = useQuery(() => ({
+    queryKey: ["authors"],
+    queryFn: async () => {
+      const res = await client.list({ page: 1, pageSize: 30 });
+      return res.authors;
+    },
+  }));
+  const create = useMutation(() => ({
+    mutationFn: async () =>
+      client.create({
+
+
+        firstname: "",
+
+
+
+        middlename: "",
+
+
+
+        lastname: "",
+
+
+      }),
+    onSuccess: () => items.refetch(),
+  }));
+  const remove = useMutation(() => ({
+    mutationFn: async (id: bigint) => client.delete({ id }),
+    onSuccess: () => items.refetch(),
+  }));
+
+  return (
+    <main style={{ "max-width": "40rem", margin: "2rem auto" }}>
+      <h1>Authors</h1>
+      <button onClick={() => create.mutate()}>Add</button>
+      <ul>
+        <For each={items.data ?? []}>
+          {(it) => (
+            <li>
+              <span>#{it.id.toString()} {JSON.stringify(it)}</span>
+              <button onClick={() => remove.mutate(it.id)}>x</button>
+            </li>
+          )}
+        </For>
+      </ul>
+    </main>
+  );
+}

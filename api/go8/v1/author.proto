@@ -1,0 +1,50 @@
+syntax = "proto3";
+package go8.v1;
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// go8cli:messages
+message Author {
+  int64 id = 1;
+  string first_name = 2;
+  string middle_name = 3;
+  string last_name = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  google.protobuf.Timestamp deleted_at = 7;
+}
+message CreateAuthorRequest {
+  string first_name = 1;
+  string middle_name = 2;
+  string last_name = 3;
+}
+message GetAuthorRequest {
+  int64 id = 1;
+}
+message ListAuthorsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string search = 3;
+}
+message ListAuthorsResponse {
+  repeated Author authors = 1;
+  int32 total = 2;
+}
+message UpdateAuthorRequest {
+  int64 id = 1;
+  string first_name = 2;
+  string middle_name = 3;
+  string last_name = 4;
+}
+message DeleteAuthorRequest {
+  int64 id = 1;
+}
+
+service AuthorService {
+	// go8cli:rpcs
+	rpc Create(CreateAuthorRequest) returns (Author);
+	rpc Get(GetAuthorRequest) returns (Author);
+	rpc List(ListAuthorsRequest) returns (ListAuthorsResponse);
+	rpc Update(UpdateAuthorRequest) returns (Author);
+	rpc Delete(DeleteAuthorRequest) returns (google.protobuf.Empty);
+}

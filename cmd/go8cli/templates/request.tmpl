@@ -1,4 +1,6 @@
 package {{.Lower}}
+{{if .HasDate}}import "time"
+{{end}}
 
 type CreateRequest struct {
 {{- range .Fields }}

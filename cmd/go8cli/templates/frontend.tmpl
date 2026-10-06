@@ -21,7 +21,9 @@ export function [[.Name]]Page() {
     mutationFn: async () =>
       client.create({
 [[ range .Fields ]]
+[[ if ne .GoType "time.Time" ]]
         [[.Camel]]: [[.TsDefault]],
+[[ end ]]
 [[ end ]]
       }),
     onSuccess: () => items.refetch(),

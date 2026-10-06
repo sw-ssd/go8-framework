@@ -1,0 +1,56 @@
+syntax = "proto3";
+package go8.v1;
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// go8cli:messages
+message Book {
+  int64 id = 1;
+  string title = 2;
+  google.protobuf.Timestamp published_date = 3;
+  string image_url = 4;
+  string description = 5;
+  int64 author_id = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp deleted_at = 9;
+}
+message CreateBookRequest {
+  string title = 1;
+  google.protobuf.Timestamp published_date = 2;
+  string image_url = 3;
+  string description = 4;
+  int64 author_id = 5;
+}
+message GetBookRequest {
+  int64 id = 1;
+}
+message ListBooksRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string search = 3;
+}
+message ListBooksResponse {
+  repeated Book books = 1;
+  int32 total = 2;
+}
+message UpdateBookRequest {
+  int64 id = 1;
+  string title = 2;
+  google.protobuf.Timestamp published_date = 3;
+  string image_url = 4;
+  string description = 5;
+  int64 author_id = 6;
+}
+message DeleteBookRequest {
+  int64 id = 1;
+}
+
+service BookService {
+	// go8cli:rpcs
+	rpc Create(CreateBookRequest) returns (Book);
+	rpc Get(GetBookRequest) returns (Book);
+	rpc List(ListBooksRequest) returns (ListBooksResponse);
+	rpc Update(UpdateBookRequest) returns (Book);
+	rpc Delete(DeleteBookRequest) returns (google.protobuf.Empty);
+}

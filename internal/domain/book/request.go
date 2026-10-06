@@ -1,16 +1,20 @@
 package book
+import "time"
+
 
 type CreateRequest struct {
-	Title         string `json:"title" validate:"required"`
-	PublishedDate string `json:"published_date" validate:"required"`
-	ImageURL      string `json:"image_url" validate:"url"`
-	Description   string `json:"description" validate:"required"`
+	Title string `json:"title" validate:"required"`
+	PublishedDate time.Time `json:"published_date"`
+	ImageURL string `json:"image_url" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	AuthorID int64 `json:"author_id"`
 }
 
 type UpdateRequest struct {
-	ID            uint64 `json:"-"`
-	Title         string `json:"title" validate:"required"`
-	PublishedDate string `json:"published_date" validate:"required"`
-	ImageURL      string `json:"image_url" validate:"url"`
-	Description   string `json:"description" validate:"required"`
+	ID uint64 `json:"id"`
+	Title string `json:"title"`
+	PublishedDate time.Time `json:"published_date"`
+	ImageURL string `json:"image_url"`
+	Description string `json:"description"`
+	AuthorID int64 `json:"author_id"`
 }

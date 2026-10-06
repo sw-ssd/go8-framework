@@ -1,18 +1,13 @@
 package author
 
-import (
-	"time"
-
-	"codeberg.org/gmhafiz/go8/internal/domain/book"
-)
+import "time"
 
 type Schema struct {
-	ID         uint64
-	FirstName  string
+	ID        uint64
+	FirstName string
 	MiddleName string
-	LastName   string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  *time.Time
-	Books      []*book.Schema
+	LastName string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
 }

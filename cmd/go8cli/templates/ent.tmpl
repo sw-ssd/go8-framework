@@ -15,7 +15,7 @@ func ({{.Name}}) Fields() []ent.Field {
 	return []ent.Field{
 		field.Uint64("id"),
 {{- range .Fields }}
-		field.{{.EntType}}("{{.Snake}}"),
+		field.{{.EntType}}("{{.Snake}}"){{if .Optional}}.Optional(){{end}},
 {{- end }}
 		field.Time("created_at").Optional().StructTag(`json:"-"`),
 		field.Time("updated_at").Optional().StructTag(`json:"-"`),

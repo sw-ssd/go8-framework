@@ -28,29 +28,8 @@ type Author struct {
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"-"`
 	// DeletedAt holds the value of the "deleted_at" field.
-	DeletedAt *time.Time `json:"-"`
-	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the AuthorQuery when eager-loading is set.
-	Edges        AuthorEdges `json:"edges"`
+	DeletedAt    *time.Time `json:"-"`
 	selectValues sql.SelectValues
-}
-
-// AuthorEdges holds the relations/edges for other nodes in the graph.
-type AuthorEdges struct {
-	// Books holds the value of the books edge.
-	Books []*Book `json:"books,omitempty"`
-	// loadedTypes holds the information for reporting if a
-	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
-}
-
-// BooksOrErr returns the Books value or an error if the edge
-// was not loaded in eager-loading.
-func (e AuthorEdges) BooksOrErr() ([]*Book, error) {
-	if e.loadedTypes[0] {
-		return e.Books, nil
-	}
-	return nil, &NotLoadedError{edge: "books"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -133,11 +112,6 @@ func (_m *Author) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Author) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
-}
-
-// QueryBooks queries the "books" edge of the Author entity.
-func (_m *Author) QueryBooks() *BookQuery {
-	return NewAuthorClient(_m.config).QueryBooks(_m)
 }
 
 // Update returns a builder for updating this Author.

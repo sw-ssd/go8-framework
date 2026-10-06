@@ -7,3 +7,6 @@ sqlboiler.toml
 tmp
 node_modules
 web/distgo8cli
+
+# macOS
+.DS_Store

@@ -7,7 +7,6 @@ import (
 
 	"codeberg.org/gmhafiz/go8/ent/gen/predicate"
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // ID filters vertices based on their ID field.
@@ -438,29 +437,6 @@ func DeletedAtIsNil() predicate.Author {
 // DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
 func DeletedAtNotNil() predicate.Author {
 	return predicate.Author(sql.FieldNotNull(FieldDeletedAt))
-}
-
-// HasBooks applies the HasEdge predicate on the "books" edge.
-func HasBooks() predicate.Author {
-	return predicate.Author(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, BooksTable, BooksPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasBooksWith applies the HasEdge predicate on the "books" edge with a given conditions (other predicates).
-func HasBooksWith(preds ...predicate.Book) predicate.Author {
-	return predicate.Author(func(s *sql.Selector) {
-		step := newBooksStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
 }
 
 // And groups predicates with the AND operator between them.

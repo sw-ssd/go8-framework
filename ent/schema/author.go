@@ -2,7 +2,6 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -21,12 +20,5 @@ func (Author) Fields() []ent.Field {
 		field.Time("created_at").Optional().StructTag(`json:"-"`),
 		field.Time("updated_at").Optional().StructTag(`json:"-"`),
 		field.Time("deleted_at").Optional().Nillable().StructTag(`json:"-"`),
-	}
-}
-
-// Edges of the Author.
-func (Author) Edges() []ent.Edge {
-	return []ent.Edge{
-		edge.From("books", Book.Type).Ref("authors"),
 	}
 }

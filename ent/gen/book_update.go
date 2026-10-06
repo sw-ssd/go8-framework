@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"codeberg.org/gmhafiz/go8/ent/gen/author"
 	"codeberg.org/gmhafiz/go8/ent/gen/book"
 	"codeberg.org/gmhafiz/go8/ent/gen/predicate"
 	"entgo.io/ent/dialect/sql"
@@ -91,6 +90,27 @@ func (_u *BookUpdate) SetNillableDescription(v *string) *BookUpdate {
 	return _u
 }
 
+// SetAuthorID sets the "author_id" field.
+func (_u *BookUpdate) SetAuthorID(v int64) *BookUpdate {
+	_u.mutation.ResetAuthorID()
+	_u.mutation.SetAuthorID(v)
+	return _u
+}
+
+// SetNillableAuthorID sets the "author_id" field if the given value is not nil.
+func (_u *BookUpdate) SetNillableAuthorID(v *int64) *BookUpdate {
+	if v != nil {
+		_u.SetAuthorID(*v)
+	}
+	return _u
+}
+
+// AddAuthorID adds value to the "author_id" field.
+func (_u *BookUpdate) AddAuthorID(v int64) *BookUpdate {
+	_u.mutation.AddAuthorID(v)
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *BookUpdate) SetCreatedAt(v time.Time) *BookUpdate {
 	_u.mutation.SetCreatedAt(v)
@@ -151,45 +171,9 @@ func (_u *BookUpdate) ClearDeletedAt() *BookUpdate {
 	return _u
 }
 
-// AddAuthorIDs adds the "authors" edge to the Author entity by IDs.
-func (_u *BookUpdate) AddAuthorIDs(ids ...uint64) *BookUpdate {
-	_u.mutation.AddAuthorIDs(ids...)
-	return _u
-}
-
-// AddAuthors adds the "authors" edges to the Author entity.
-func (_u *BookUpdate) AddAuthors(v ...*Author) *BookUpdate {
-	ids := make([]uint64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddAuthorIDs(ids...)
-}
-
 // Mutation returns the BookMutation object of the builder.
 func (_u *BookUpdate) Mutation() *BookMutation {
 	return _u.mutation
-}
-
-// ClearAuthors clears all "authors" edges to the Author entity.
-func (_u *BookUpdate) ClearAuthors() *BookUpdate {
-	_u.mutation.ClearAuthors()
-	return _u
-}
-
-// RemoveAuthorIDs removes the "authors" edge to Author entities by IDs.
-func (_u *BookUpdate) RemoveAuthorIDs(ids ...uint64) *BookUpdate {
-	_u.mutation.RemoveAuthorIDs(ids...)
-	return _u
-}
-
-// RemoveAuthors removes "authors" edges to Author entities.
-func (_u *BookUpdate) RemoveAuthors(v ...*Author) *BookUpdate {
-	ids := make([]uint64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveAuthorIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -243,6 +227,12 @@ func (_u *BookUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(book.FieldDescription, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.AuthorID(); ok {
+		_spec.SetField(book.FieldAuthorID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedAuthorID(); ok {
+		_spec.AddField(book.FieldAuthorID, field.TypeInt64, value)
+	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(book.FieldCreatedAt, field.TypeTime, value)
 	}
@@ -260,51 +250,6 @@ func (_u *BookUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(book.FieldDeletedAt, field.TypeTime)
-	}
-	if _u.mutation.AuthorsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   book.AuthorsTable,
-			Columns: book.AuthorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(author.FieldID, field.TypeUint64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedAuthorsIDs(); len(nodes) > 0 && !_u.mutation.AuthorsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   book.AuthorsTable,
-			Columns: book.AuthorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(author.FieldID, field.TypeUint64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.AuthorsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   book.AuthorsTable,
-			Columns: book.AuthorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(author.FieldID, field.TypeUint64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -388,6 +333,27 @@ func (_u *BookUpdateOne) SetNillableDescription(v *string) *BookUpdateOne {
 	return _u
 }
 
+// SetAuthorID sets the "author_id" field.
+func (_u *BookUpdateOne) SetAuthorID(v int64) *BookUpdateOne {
+	_u.mutation.ResetAuthorID()
+	_u.mutation.SetAuthorID(v)
+	return _u
+}
+
+// SetNillableAuthorID sets the "author_id" field if the given value is not nil.
+func (_u *BookUpdateOne) SetNillableAuthorID(v *int64) *BookUpdateOne {
+	if v != nil {
+		_u.SetAuthorID(*v)
+	}
+	return _u
+}
+
+// AddAuthorID adds value to the "author_id" field.
+func (_u *BookUpdateOne) AddAuthorID(v int64) *BookUpdateOne {
+	_u.mutation.AddAuthorID(v)
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *BookUpdateOne) SetCreatedAt(v time.Time) *BookUpdateOne {
 	_u.mutation.SetCreatedAt(v)
@@ -448,45 +414,9 @@ func (_u *BookUpdateOne) ClearDeletedAt() *BookUpdateOne {
 	return _u
 }
 
-// AddAuthorIDs adds the "authors" edge to the Author entity by IDs.
-func (_u *BookUpdateOne) AddAuthorIDs(ids ...uint64) *BookUpdateOne {
-	_u.mutation.AddAuthorIDs(ids...)
-	return _u
-}
-
-// AddAuthors adds the "authors" edges to the Author entity.
-func (_u *BookUpdateOne) AddAuthors(v ...*Author) *BookUpdateOne {
-	ids := make([]uint64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddAuthorIDs(ids...)
-}
-
 // Mutation returns the BookMutation object of the builder.
 func (_u *BookUpdateOne) Mutation() *BookMutation {
 	return _u.mutation
-}
-
-// ClearAuthors clears all "authors" edges to the Author entity.
-func (_u *BookUpdateOne) ClearAuthors() *BookUpdateOne {
-	_u.mutation.ClearAuthors()
-	return _u
-}
-
-// RemoveAuthorIDs removes the "authors" edge to Author entities by IDs.
-func (_u *BookUpdateOne) RemoveAuthorIDs(ids ...uint64) *BookUpdateOne {
-	_u.mutation.RemoveAuthorIDs(ids...)
-	return _u
-}
-
-// RemoveAuthors removes "authors" edges to Author entities.
-func (_u *BookUpdateOne) RemoveAuthors(v ...*Author) *BookUpdateOne {
-	ids := make([]uint64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveAuthorIDs(ids...)
 }
 
 // Where appends a list predicates to the BookUpdate builder.
@@ -570,6 +500,12 @@ func (_u *BookUpdateOne) sqlSave(ctx context.Context) (_node *Book, err error) {
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(book.FieldDescription, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.AuthorID(); ok {
+		_spec.SetField(book.FieldAuthorID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedAuthorID(); ok {
+		_spec.AddField(book.FieldAuthorID, field.TypeInt64, value)
+	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(book.FieldCreatedAt, field.TypeTime, value)
 	}
@@ -587,51 +523,6 @@ func (_u *BookUpdateOne) sqlSave(ctx context.Context) (_node *Book, err error) {
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(book.FieldDeletedAt, field.TypeTime)
-	}
-	if _u.mutation.AuthorsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   book.AuthorsTable,
-			Columns: book.AuthorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(author.FieldID, field.TypeUint64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedAuthorsIDs(); len(nodes) > 0 && !_u.mutation.AuthorsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   book.AuthorsTable,
-			Columns: book.AuthorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(author.FieldID, field.TypeUint64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.AuthorsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   book.AuthorsTable,
-			Columns: book.AuthorsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(author.FieldID, field.TypeUint64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Book{config: _u.config}
 	_spec.Assign = _node.assignValues

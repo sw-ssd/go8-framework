@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS {{.PluralLower}} (
     id BIGSERIAL PRIMARY KEY,
 {{- range .Fields }}
-    {{.Column}} {{.Snake}} NOT NULL{{if eq .GoType "string"}} DEFAULT ''{{end}},
+    {{.Column}} {{.Snake}} {{if .Optional}}NULL{{else}}NOT NULL{{if eq .GoType "string"}} DEFAULT ''{{end}}{{end}},
 {{- end }}
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,

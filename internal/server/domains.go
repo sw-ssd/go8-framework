@@ -6,6 +6,8 @@ import (
 
 	"codeberg.org/gmhafiz/go8/ent/gen"
 	todoService "codeberg.org/gmhafiz/go8/internal/domain/todo/service"
+	AuthorService "codeberg.org/gmhafiz/go8/internal/domain/author/service"
+	BookService "codeberg.org/gmhafiz/go8/internal/domain/book/service"
 	// go8cli:imports
 )
 
@@ -19,5 +21,7 @@ type ConnectDomain struct {
 // ConnectDomains is the registry go8cli appends a line to.
 var ConnectDomains = []ConnectDomain{
 	{Name: "todo", Register: todoService.Register},
+	{Name: "author", Register: AuthorService.Register},
+	{Name: "book", Register: BookService.Register},
 	// go8cli:domains
 }

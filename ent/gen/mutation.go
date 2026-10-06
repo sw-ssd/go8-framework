@@ -48,9 +48,6 @@ type AuthorMutation struct {
 	updated_at    *time.Time
 	deleted_at    *time.Time
 	clearedFields map[string]struct{}
-	books         map[uint64]struct{}
-	removedbooks  map[uint64]struct{}
-	clearedbooks  bool
 	done          bool
 	oldValue      func(context.Context) (*Author, error)
 	predicates    []predicate.Author
@@ -428,60 +425,6 @@ func (m *AuthorMutation) ResetDeletedAt() {
 	delete(m.clearedFields, author.FieldDeletedAt)
 }
 
-// AddBookIDs adds the "books" edge to the Book entity by ids.
-func (m *AuthorMutation) AddBookIDs(ids ...uint64) {
-	if m.books == nil {
-		m.books = make(map[uint64]struct{})
-	}
-	for i := range ids {
-		m.books[ids[i]] = struct{}{}
-	}
-}
-
-// ClearBooks clears the "books" edge to the Book entity.
-func (m *AuthorMutation) ClearBooks() {
-	m.clearedbooks = true
-}
-
-// BooksCleared reports if the "books" edge to the Book entity was cleared.
-func (m *AuthorMutation) BooksCleared() bool {
-	return m.clearedbooks
-}
-
-// RemoveBookIDs removes the "books" edge to the Book entity by IDs.
-func (m *AuthorMutation) RemoveBookIDs(ids ...uint64) {
-	if m.removedbooks == nil {
-		m.removedbooks = make(map[uint64]struct{})
-	}
-	for i := range ids {
-		delete(m.books, ids[i])
-		m.removedbooks[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedBooks returns the removed IDs of the "books" edge to the Book entity.
-func (m *AuthorMutation) RemovedBooksIDs() (ids []uint64) {
-	for id := range m.removedbooks {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// BooksIDs returns the "books" edge IDs in the mutation.
-func (m *AuthorMutation) BooksIDs() (ids []uint64) {
-	for id := range m.books {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetBooks resets all changes to the "books" edge.
-func (m *AuthorMutation) ResetBooks() {
-	m.books = nil
-	m.clearedbooks = false
-	m.removedbooks = nil
-}
-
 // Where appends a list predicates to the AuthorMutation builder.
 func (m *AuthorMutation) Where(ps ...predicate.Author) {
 	m.predicates = append(m.predicates, ps...)
@@ -727,85 +670,49 @@ func (m *AuthorMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AuthorMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.books != nil {
-		edges = append(edges, author.EdgeBooks)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *AuthorMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case author.EdgeBooks:
-		ids := make([]ent.Value, 0, len(m.books))
-		for id := range m.books {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AuthorMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedbooks != nil {
-		edges = append(edges, author.EdgeBooks)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *AuthorMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case author.EdgeBooks:
-		ids := make([]ent.Value, 0, len(m.removedbooks))
-		for id := range m.removedbooks {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AuthorMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedbooks {
-		edges = append(edges, author.EdgeBooks)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *AuthorMutation) EdgeCleared(name string) bool {
-	switch name {
-	case author.EdgeBooks:
-		return m.clearedbooks
-	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *AuthorMutation) ClearEdge(name string) error {
-	switch name {
-	}
 	return fmt.Errorf("unknown Author unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *AuthorMutation) ResetEdge(name string) error {
-	switch name {
-	case author.EdgeBooks:
-		m.ResetBooks()
-		return nil
-	}
 	return fmt.Errorf("unknown Author edge %s", name)
 }
 
@@ -819,13 +726,12 @@ type BookMutation struct {
 	published_date *time.Time
 	image_url      *string
 	description    *string
+	author_id      *int64
+	addauthor_id   *int64
 	created_at     *time.Time
 	updated_at     *time.Time
 	deleted_at     *time.Time
 	clearedFields  map[string]struct{}
-	authors        map[uint64]struct{}
-	removedauthors map[uint64]struct{}
-	clearedauthors bool
 	done           bool
 	oldValue       func(context.Context) (*Book, error)
 	predicates     []predicate.Book
@@ -1092,6 +998,62 @@ func (m *BookMutation) ResetDescription() {
 	m.description = nil
 }
 
+// SetAuthorID sets the "author_id" field.
+func (m *BookMutation) SetAuthorID(i int64) {
+	m.author_id = &i
+	m.addauthor_id = nil
+}
+
+// AuthorID returns the value of the "author_id" field in the mutation.
+func (m *BookMutation) AuthorID() (r int64, exists bool) {
+	v := m.author_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAuthorID returns the old "author_id" field's value of the Book entity.
+// If the Book object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BookMutation) OldAuthorID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAuthorID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAuthorID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAuthorID: %w", err)
+	}
+	return oldValue.AuthorID, nil
+}
+
+// AddAuthorID adds i to the "author_id" field.
+func (m *BookMutation) AddAuthorID(i int64) {
+	if m.addauthor_id != nil {
+		*m.addauthor_id += i
+	} else {
+		m.addauthor_id = &i
+	}
+}
+
+// AddedAuthorID returns the value that was added to the "author_id" field in this mutation.
+func (m *BookMutation) AddedAuthorID() (r int64, exists bool) {
+	v := m.addauthor_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAuthorID resets all changes to the "author_id" field.
+func (m *BookMutation) ResetAuthorID() {
+	m.author_id = nil
+	m.addauthor_id = nil
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *BookMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -1239,60 +1201,6 @@ func (m *BookMutation) ResetDeletedAt() {
 	delete(m.clearedFields, book.FieldDeletedAt)
 }
 
-// AddAuthorIDs adds the "authors" edge to the Author entity by ids.
-func (m *BookMutation) AddAuthorIDs(ids ...uint64) {
-	if m.authors == nil {
-		m.authors = make(map[uint64]struct{})
-	}
-	for i := range ids {
-		m.authors[ids[i]] = struct{}{}
-	}
-}
-
-// ClearAuthors clears the "authors" edge to the Author entity.
-func (m *BookMutation) ClearAuthors() {
-	m.clearedauthors = true
-}
-
-// AuthorsCleared reports if the "authors" edge to the Author entity was cleared.
-func (m *BookMutation) AuthorsCleared() bool {
-	return m.clearedauthors
-}
-
-// RemoveAuthorIDs removes the "authors" edge to the Author entity by IDs.
-func (m *BookMutation) RemoveAuthorIDs(ids ...uint64) {
-	if m.removedauthors == nil {
-		m.removedauthors = make(map[uint64]struct{})
-	}
-	for i := range ids {
-		delete(m.authors, ids[i])
-		m.removedauthors[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedAuthors returns the removed IDs of the "authors" edge to the Author entity.
-func (m *BookMutation) RemovedAuthorsIDs() (ids []uint64) {
-	for id := range m.removedauthors {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// AuthorsIDs returns the "authors" edge IDs in the mutation.
-func (m *BookMutation) AuthorsIDs() (ids []uint64) {
-	for id := range m.authors {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetAuthors resets all changes to the "authors" edge.
-func (m *BookMutation) ResetAuthors() {
-	m.authors = nil
-	m.clearedauthors = false
-	m.removedauthors = nil
-}
-
 // Where appends a list predicates to the BookMutation builder.
 func (m *BookMutation) Where(ps ...predicate.Book) {
 	m.predicates = append(m.predicates, ps...)
@@ -1327,7 +1235,7 @@ func (m *BookMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BookMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.title != nil {
 		fields = append(fields, book.FieldTitle)
 	}
@@ -1339,6 +1247,9 @@ func (m *BookMutation) Fields() []string {
 	}
 	if m.description != nil {
 		fields = append(fields, book.FieldDescription)
+	}
+	if m.author_id != nil {
+		fields = append(fields, book.FieldAuthorID)
 	}
 	if m.created_at != nil {
 		fields = append(fields, book.FieldCreatedAt)
@@ -1365,6 +1276,8 @@ func (m *BookMutation) Field(name string) (ent.Value, bool) {
 		return m.ImageURL()
 	case book.FieldDescription:
 		return m.Description()
+	case book.FieldAuthorID:
+		return m.AuthorID()
 	case book.FieldCreatedAt:
 		return m.CreatedAt()
 	case book.FieldUpdatedAt:
@@ -1388,6 +1301,8 @@ func (m *BookMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldImageURL(ctx)
 	case book.FieldDescription:
 		return m.OldDescription(ctx)
+	case book.FieldAuthorID:
+		return m.OldAuthorID(ctx)
 	case book.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case book.FieldUpdatedAt:
@@ -1431,6 +1346,13 @@ func (m *BookMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDescription(v)
 		return nil
+	case book.FieldAuthorID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAuthorID(v)
+		return nil
 	case book.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -1459,13 +1381,21 @@ func (m *BookMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *BookMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addauthor_id != nil {
+		fields = append(fields, book.FieldAuthorID)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *BookMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case book.FieldAuthorID:
+		return m.AddedAuthorID()
+	}
 	return nil, false
 }
 
@@ -1474,6 +1404,13 @@ func (m *BookMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *BookMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case book.FieldAuthorID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAuthorID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Book numeric field %s", name)
 }
@@ -1540,6 +1477,9 @@ func (m *BookMutation) ResetField(name string) error {
 	case book.FieldDescription:
 		m.ResetDescription()
 		return nil
+	case book.FieldAuthorID:
+		m.ResetAuthorID()
+		return nil
 	case book.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
@@ -1555,85 +1495,49 @@ func (m *BookMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BookMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.authors != nil {
-		edges = append(edges, book.EdgeAuthors)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *BookMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case book.EdgeAuthors:
-		ids := make([]ent.Value, 0, len(m.authors))
-		for id := range m.authors {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BookMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedauthors != nil {
-		edges = append(edges, book.EdgeAuthors)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *BookMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case book.EdgeAuthors:
-		ids := make([]ent.Value, 0, len(m.removedauthors))
-		for id := range m.removedauthors {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BookMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedauthors {
-		edges = append(edges, book.EdgeAuthors)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *BookMutation) EdgeCleared(name string) bool {
-	switch name {
-	case book.EdgeAuthors:
-		return m.clearedauthors
-	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *BookMutation) ClearEdge(name string) error {
-	switch name {
-	}
 	return fmt.Errorf("unknown Book unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *BookMutation) ResetEdge(name string) error {
-	switch name {
-	case book.EdgeAuthors:
-		m.ResetAuthors()
-		return nil
-	}
 	return fmt.Errorf("unknown Book edge %s", name)
 }
 

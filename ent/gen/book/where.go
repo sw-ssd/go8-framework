@@ -7,7 +7,6 @@ import (
 
 	"codeberg.org/gmhafiz/go8/ent/gen/predicate"
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // ID filters vertices based on their ID field.
@@ -73,6 +72,11 @@ func ImageURL(v string) predicate.Book {
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.Book {
 	return predicate.Book(sql.FieldEQ(FieldDescription, v))
+}
+
+// AuthorID applies equality check predicate on the "author_id" field. It's identical to AuthorIDEQ.
+func AuthorID(v int64) predicate.Book {
+	return predicate.Book(sql.FieldEQ(FieldAuthorID, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -335,6 +339,46 @@ func DescriptionContainsFold(v string) predicate.Book {
 	return predicate.Book(sql.FieldContainsFold(FieldDescription, v))
 }
 
+// AuthorIDEQ applies the EQ predicate on the "author_id" field.
+func AuthorIDEQ(v int64) predicate.Book {
+	return predicate.Book(sql.FieldEQ(FieldAuthorID, v))
+}
+
+// AuthorIDNEQ applies the NEQ predicate on the "author_id" field.
+func AuthorIDNEQ(v int64) predicate.Book {
+	return predicate.Book(sql.FieldNEQ(FieldAuthorID, v))
+}
+
+// AuthorIDIn applies the In predicate on the "author_id" field.
+func AuthorIDIn(vs ...int64) predicate.Book {
+	return predicate.Book(sql.FieldIn(FieldAuthorID, vs...))
+}
+
+// AuthorIDNotIn applies the NotIn predicate on the "author_id" field.
+func AuthorIDNotIn(vs ...int64) predicate.Book {
+	return predicate.Book(sql.FieldNotIn(FieldAuthorID, vs...))
+}
+
+// AuthorIDGT applies the GT predicate on the "author_id" field.
+func AuthorIDGT(v int64) predicate.Book {
+	return predicate.Book(sql.FieldGT(FieldAuthorID, v))
+}
+
+// AuthorIDGTE applies the GTE predicate on the "author_id" field.
+func AuthorIDGTE(v int64) predicate.Book {
+	return predicate.Book(sql.FieldGTE(FieldAuthorID, v))
+}
+
+// AuthorIDLT applies the LT predicate on the "author_id" field.
+func AuthorIDLT(v int64) predicate.Book {
+	return predicate.Book(sql.FieldLT(FieldAuthorID, v))
+}
+
+// AuthorIDLTE applies the LTE predicate on the "author_id" field.
+func AuthorIDLTE(v int64) predicate.Book {
+	return predicate.Book(sql.FieldLTE(FieldAuthorID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Book {
 	return predicate.Book(sql.FieldEQ(FieldCreatedAt, v))
@@ -483,29 +527,6 @@ func DeletedAtIsNil() predicate.Book {
 // DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
 func DeletedAtNotNil() predicate.Book {
 	return predicate.Book(sql.FieldNotNull(FieldDeletedAt))
-}
-
-// HasAuthors applies the HasEdge predicate on the "authors" edge.
-func HasAuthors() predicate.Book {
-	return predicate.Book(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, AuthorsTable, AuthorsPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasAuthorsWith applies the HasEdge predicate on the "authors" edge with a given conditions (other predicates).
-func HasAuthorsWith(preds ...predicate.Author) predicate.Book {
-	return predicate.Book(func(s *sql.Selector) {
-		step := newAuthorsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
 }
 
 // And groups predicates with the AND operator between them.

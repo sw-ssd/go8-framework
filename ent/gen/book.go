@@ -24,35 +24,16 @@ type Book struct {
 	// ImageURL holds the value of the "image_url" field.
 	ImageURL string `json:"image_url,omitempty"`
 	// Description holds the value of the "description" field.
-	Description string `json:"-"`
+	Description string `json:"description,omitempty"`
+	// AuthorID holds the value of the "author_id" field.
+	AuthorID int64 `json:"author_id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"-"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"-"`
 	// DeletedAt holds the value of the "deleted_at" field.
-	DeletedAt *time.Time `json:"-"`
-	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the BookQuery when eager-loading is set.
-	Edges        BookEdges `json:"edges"`
+	DeletedAt    *time.Time `json:"-"`
 	selectValues sql.SelectValues
-}
-
-// BookEdges holds the relations/edges for other nodes in the graph.
-type BookEdges struct {
-	// Authors holds the value of the authors edge.
-	Authors []*Author `json:"authors,omitempty"`
-	// loadedTypes holds the information for reporting if a
-	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
-}
-
-// AuthorsOrErr returns the Authors value or an error if the edge
-// was not loaded in eager-loading.
-func (e BookEdges) AuthorsOrErr() ([]*Author, error) {
-	if e.loadedTypes[0] {
-		return e.Authors, nil
-	}
-	return nil, &NotLoadedError{edge: "authors"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -60,7 +41,7 @@ func (*Book) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case book.FieldID:
+		case book.FieldID, book.FieldAuthorID:
 			values[i] = new(sql.NullInt64)
 		case book.FieldTitle, book.FieldImageURL, book.FieldDescription:
 			values[i] = new(sql.NullString)
@@ -111,6 +92,12 @@ func (_m *Book) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Description = value.String
 			}
+		case book.FieldAuthorID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field author_id", values[i])
+			} else if value.Valid {
+				_m.AuthorID = value.Int64
+			}
 		case book.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
@@ -141,11 +128,6 @@ func (_m *Book) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Book) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
-}
-
-// QueryAuthors queries the "authors" edge of the Book entity.
-func (_m *Book) QueryAuthors() *AuthorQuery {
-	return NewBookClient(_m.config).QueryAuthors(_m)
 }
 
 // Update returns a builder for updating this Book.
@@ -180,7 +162,11 @@ func (_m *Book) String() string {
 	builder.WriteString("image_url=")
 	builder.WriteString(_m.ImageURL)
 	builder.WriteString(", ")
-	builder.WriteString("description=<sensitive>")
+	builder.WriteString("description=")
+	builder.WriteString(_m.Description)
+	builder.WriteString(", ")
+	builder.WriteString("author_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AuthorID))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

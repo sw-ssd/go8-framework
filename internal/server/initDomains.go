@@ -8,12 +8,6 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"codeberg.org/gmhafiz/go8/internal/domain/authentication"
-	authorHandler "codeberg.org/gmhafiz/go8/internal/domain/author/handler"
-	authorRepo "codeberg.org/gmhafiz/go8/internal/domain/author/repository"
-	authorUseCase "codeberg.org/gmhafiz/go8/internal/domain/author/usecase"
-	bookHandler "codeberg.org/gmhafiz/go8/internal/domain/book/handler"
-	bookRepo "codeberg.org/gmhafiz/go8/internal/domain/book/repository"
-	bookUseCase "codeberg.org/gmhafiz/go8/internal/domain/book/usecase"
 	"codeberg.org/gmhafiz/go8/internal/domain/health"
 	"codeberg.org/gmhafiz/go8/internal/middleware"
 	"codeberg.org/gmhafiz/go8/internal/utility/respond"
@@ -23,9 +17,7 @@ func (s *Server) InitDomains() {
 	s.initVersion()
 	s.initSwagger()
 	s.initAuthentication()
-	s.initAuthor()
 	s.initHealth()
-	s.initBook()
 	s.initConnectDomains()
 }
 
@@ -69,28 +61,6 @@ func (s *Server) initSwagger() {
 		s.router.Handle("/swagger/", http.StripPrefix("/swagger", middleware.ContentType(fileServer)))
 		s.router.Handle("/swagger/*", http.StripPrefix("/swagger", middleware.ContentType(fileServer)))
 	}
-}
-
-func (s *Server) initBook() {
-	newBookRepo := bookRepo.New(s.sqlx)
-	newBookUseCase := bookUseCase.New(newBookRepo)
-	bookHandler.RegisterHTTPEndPoints(s.router, s.validator, newBookUseCase)
-}
-
-func (s *Server) initAuthor() {
-	newAuthorRepo := authorRepo.New(s.ent)
-	newLRUCache := authorRepo.NewLRUCache(newAuthorRepo)
-	newRedisCache := authorRepo.NewRedisCache(newAuthorRepo, s.cache)
-	newAuthorSearchRepo := authorRepo.NewSearch(s.ent)
-
-	newAuthorUseCase := authorUseCase.New(
-		s.cfg.Cache,
-		newAuthorRepo,
-		newAuthorSearchRepo,
-		newLRUCache,
-		newRedisCache,
-	)
-	authorHandler.RegisterHTTPEndPoints(s.router, s.validator, newAuthorUseCase)
 }
 
 func (s *Server) initAuthentication() {

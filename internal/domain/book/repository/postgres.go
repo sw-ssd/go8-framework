@@ -2,129 +2,143 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-	"errors"
-	"fmt"
+	"time"
 
-	"github.com/jmoiron/sqlx"
+	"entgo.io/ent/dialect/sql"
 
+	"codeberg.org/gmhafiz/go8/ent/gen"
+	entBook "codeberg.org/gmhafiz/go8/ent/gen/book"
 	"codeberg.org/gmhafiz/go8/internal/domain/book"
-	"codeberg.org/gmhafiz/go8/internal/utility/message"
 )
 
-//go:generate go run -mod=mod codeberg.org/gmhafiz/mirip/cmd/mirip@latest -rm -pkg repository -out repo_mock.go . Book
+type repository struct {
+	ent *gen.Client
+}
+
+// Book is the persistence boundary for the book resource (ent-backed).
 type Book interface {
-	Create(ctx context.Context, book *book.CreateRequest) (uint64, error)
-	List(ctx context.Context, f *book.Filter) ([]*book.Schema, error)
-	Read(ctx context.Context, bookID uint64) (*book.Schema, error)
-	Update(ctx context.Context, book *book.UpdateRequest) error
-	Delete(ctx context.Context, bookID uint64) error
-	Search(ctx context.Context, req *book.Filter) ([]*book.Schema, error)
+	// go8cli:iface
+	Create(ctx context.Context, request *book.CreateRequest) (*book.Schema, error)
+	List(ctx context.Context, f *book.Filter) ([]*book.Schema, int, error)
+	Read(ctx context.Context, id uint64) (*book.Schema, error)
+	Update(ctx context.Context, request *book.UpdateRequest) (*book.Schema, error)
+	Delete(ctx context.Context, id uint64) error
 }
 
-type bookRepository struct {
-	db *sqlx.DB
+func New(ent *gen.Client) *repository {
+	return &repository{ent: ent}
 }
 
-const (
-	InsertIntoBooks         = "INSERT INTO books (title, published_date, image_url, description) VALUES ($1, $2, $3, $4) RETURNING id"
-	SelectFromBooks         = "SELECT * FROM books ORDER BY created_at DESC"
-	SelectFromBooksPaginate = "SELECT * FROM books ORDER BY created_at DESC LIMIT $1 OFFSET $2"
-	SelectBookByID          = "SELECT * FROM books where id = $1"
-	UpdateBook              = "UPDATE books set title = $1, description = $2, published_date = $3, image_url = $4 where id = $5 RETURNING id"
-	DeleteByID              = "DELETE FROM books where id = ($1) RETURNING id"
-	SearchBooks             = "SELECT * FROM books where title like '%' || $1 || '%' and description like '%'|| $2 || '%' ORDER BY published_date DESC"
-	SearchBooksPaginate     = "SELECT * FROM books where title like '%' || '%' || $1 || '%' || '%' and description like '%'|| $2 || '%' ORDER BY published_date DESC LIMIT $3 OFFSET $4"
-)
-
-func New(db *sqlx.DB) *bookRepository {
-	return &bookRepository{db: db}
-}
-
-func (r *bookRepository) Create(ctx context.Context, req *book.CreateRequest) (bookID uint64, err error) {
-	if err = r.db.QueryRowContext(ctx, InsertIntoBooks, req.Title, req.PublishedDate, req.ImageURL, req.Description).Scan(&bookID); err != nil {
-		return 0, errors.New("repository.Book.Create")
-	}
-
-	return bookID, nil
-}
-
-func (r *bookRepository) List(ctx context.Context, f *book.Filter) ([]*book.Schema, error) {
-	if f == nil {
-		return nil, errors.New("filter cannot be nil")
-	}
-	if f.Base.DisablePaging {
-		var books []*book.Schema
-		err := r.db.SelectContext(ctx, &books, SelectFromBooks)
-		if err != nil {
-			return nil, message.ErrFetchingBook
-		}
-
-		return books, nil
-	} else {
-		var books []*book.Schema
-		err := r.db.SelectContext(ctx, &books, SelectFromBooksPaginate, f.Base.Limit, f.Base.Offset)
-		if err != nil {
-			return nil, message.ErrFetchingBook
-		}
-		return books, nil
-	}
-}
-
-func (r *bookRepository) Read(ctx context.Context, bookID uint64) (*book.Schema, error) {
-	var b book.Schema
-	err := r.db.GetContext(ctx, &b, SelectBookByID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, message.ErrBadRequest
-		}
-		return nil, err
-	}
-
-	return &b, err
-}
-
-func (r *bookRepository) Update(ctx context.Context, book *book.UpdateRequest) error {
-	var returnedID int
-
-	err := r.db.QueryRowContext(ctx, UpdateBook,
-		book.Title,
-		book.Description,
-		book.PublishedDate,
-		book.ImageURL,
-		book.ID,
-	).Scan(&returnedID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *bookRepository) Delete(ctx context.Context, bookID uint64) error {
-	var returnedID int
-	err := r.db.QueryRowContext(ctx, DeleteByID, bookID).Scan(&returnedID)
-	if err != nil {
-		return fmt.Errorf("ID not found: %w", err)
-	}
-
-	return nil
-}
-
-func (r *bookRepository) Search(ctx context.Context, f *book.Filter) ([]*book.Schema, error) {
-	if f == nil {
-		return nil, errors.New("filter cannot be nil")
-	}
-	var books []*book.Schema
-	err := r.db.SelectContext(ctx, &books, SearchBooksPaginate,
-		f.Title,
-		f.Description,
-		f.Base.Limit,
-		f.Base.Offset,
-	)
+// go8cli:impl
+func (r *repository) Create(ctx context.Context, request *book.CreateRequest) (*book.Schema, error) {
+	create := r.ent.Book.Create()
+	create = create.SetTitle(request.Title)
+	create = create.SetPublishedDate(request.PublishedDate)
+	create = create.SetImageURL(request.ImageURL)
+	create = create.SetDescription(request.Description)
+	create = create.SetAuthorID(request.AuthorID)
+	create = create.SetCreatedAt(time.Now())
+	created, err := create.Save(ctx)
 	if err != nil {
 		return nil, err
 	}
+	return toSchema(created), nil
+}
 
-	return books, nil
+func (r *repository) List(ctx context.Context, f *book.Filter) ([]*book.Schema, int, error) {
+	query := r.ent.Book.Query()
+	if f.Title != "" {
+		query = query.Where(entBook.TitleContains(f.Title))
+	}
+	if f.ImageURL != "" {
+		query = query.Where(entBook.ImageURLContains(f.ImageURL))
+	}
+	if f.Description != "" {
+		query = query.Where(entBook.DescriptionContains(f.Description))
+	}
+	total, err := query.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !f.Base.DisablePaging {
+		query = query.Limit(f.Base.Limit).Offset(f.Base.Offset)
+	}
+	for field, order := range f.Base.Sort {
+		if order == "DESC" {
+			switch field {
+			case "title":
+				query = query.Order(entBook.ByTitle(sql.OrderDesc()))
+			case "image_url":
+				query = query.Order(entBook.ByImageURL(sql.OrderDesc()))
+			case "description":
+				query = query.Order(entBook.ByDescription(sql.OrderDesc()))
+			}
+		} else {
+			switch field {
+			case "title":
+				query = query.Order(entBook.ByTitle())
+			case "image_url":
+				query = query.Order(entBook.ByImageURL())
+			case "description":
+				query = query.Order(entBook.ByDescription())
+			}
+		}
+	}
+	entities, err := query.All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return toSchemas(entities), total, nil
+}
+
+func (r *repository) Read(ctx context.Context, id uint64) (*book.Schema, error) {
+	entity, err := r.ent.Book.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return toSchema(entity), nil
+}
+
+func (r *repository) Update(ctx context.Context, request *book.UpdateRequest) (*book.Schema, error) {
+	update := r.ent.Book.UpdateOneID(request.ID)
+	update = update.SetTitle(request.Title)
+	update = update.SetPublishedDate(request.PublishedDate)
+	update = update.SetImageURL(request.ImageURL)
+	update = update.SetDescription(request.Description)
+	update = update.SetAuthorID(request.AuthorID)
+	update = update.SetUpdatedAt(time.Now())
+	updated, err := update.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toSchema(updated), nil
+}
+
+func (r *repository) Delete(ctx context.Context, id uint64) error {
+	return r.ent.Book.DeleteOneID(id).Exec(ctx)
+}
+
+func toSchema(e *gen.Book) *book.Schema {
+	if e == nil {
+		return nil
+	}
+	return &book.Schema{
+		ID:        e.ID,
+		Title:     e.Title,
+		PublishedDate:     e.PublishedDate,
+		ImageURL:     e.ImageURL,
+		Description:     e.Description,
+		AuthorID:     e.AuthorID,
+		CreatedAt: e.CreatedAt,
+		UpdatedAt: e.UpdatedAt,
+		DeletedAt: e.DeletedAt,
+	}
+}
+
+func toSchemas(entities []*gen.Book) []*book.Schema {
+	out := make([]*book.Schema, 0, len(entities))
+	for _, e := range entities {
+		out = append(out, toSchema(e))
+	}
+	return out
 }
