@@ -101,7 +101,7 @@ func (s *Service) Delete(ctx context.Context, req *connect.Request[go8v1.DeleteB
 // Register mounts the CONNECT handler on the chi router.
 func Register(ent *gen.Client, r chi.Router, opts ...connect.HandlerOption) {
 	path, handler := go8v1connect.NewBookServiceHandler(New(ent), opts...)
-	r.Handle(path, handler)
+	r.Handle(path+"*", handler)
 }
 
 func toProto(s *book.Schema) *go8v1.Book {

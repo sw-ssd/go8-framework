@@ -1,10 +1,12 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE IF NOT EXISTS todos (
+CREATE TABLE IF NOT EXISTS books (
     id BIGSERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    done BOOLEAN NOT NULL DEFAULT FALSE,
-    priority INTEGER NOT NULL DEFAULT 0,
+    title TEXT NOT NULL DEFAULT '',
+    published_date TIMESTAMPTZ NOT NULL,
+    image_url TEXT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    author_id BIGINT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     deleted_at TIMESTAMPTZ
@@ -13,5 +15,5 @@ CREATE TABLE IF NOT EXISTS todos (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS todos;
+DROP TABLE IF EXISTS books;
 -- +goose StatementEnd

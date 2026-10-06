@@ -272,6 +272,14 @@ func (s *Server) Migrate() {
 	log.Println("done migration.")
 }
 
+// Shutdown gracefully stops the HTTP server.
+func (s *Server) Shutdown(ctx context.Context) error {
+	if s.httpServer == nil {
+		return nil
+	}
+	return s.httpServer.Shutdown(ctx)
+}
+
 func (s *Server) Run() {
 	s.httpServer = &http.Server{
 		Addr:              s.cfg.API.Host + ":" + s.cfg.API.Port,
@@ -457,7 +465,7 @@ func getModName() string {
 func start(s *Server) {
 	log.Printf("Serving at %s:%s\n", s.cfg.API.Host, s.cfg.API.Port)
 	err := s.httpServer.ListenAndServe()
-	if err != nil {
+	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }
