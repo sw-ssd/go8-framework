@@ -6,7 +6,8 @@ vendor
 sqlboiler.toml
 tmp
 node_modules
-web/distgo8cli
+web/dist/
+go8cli
 
 # macOS
 .DS_Store
