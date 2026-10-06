@@ -54,6 +54,22 @@ var (
 		Columns:    SessionsColumns,
 		PrimaryKey: []*schema.Column{SessionsColumns[0]},
 	}
+	// TodosColumns holds the columns for the "todos" table.
+	TodosColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUint64, Increment: true},
+		{Name: "title", Type: field.TypeString},
+		{Name: "done", Type: field.TypeBool, Default: false},
+		{Name: "priority", Type: field.TypeInt, Default: 0},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+	}
+	// TodosTable holds the schema information for the "todos" table.
+	TodosTable = &schema.Table{
+		Name:       "todos",
+		Columns:    TodosColumns,
+		PrimaryKey: []*schema.Column{TodosColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUint64, Increment: true},
@@ -100,6 +116,7 @@ var (
 		AuthorsTable,
 		BooksTable,
 		SessionsTable,
+		TodosTable,
 		UsersTable,
 		BookAuthorsTable,
 	}

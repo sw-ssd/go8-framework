@@ -26,6 +26,13 @@ func (s *Server) InitDomains() {
 	s.initAuthor()
 	s.initHealth()
 	s.initBook()
+	s.initConnectDomains()
+}
+
+func (s *Server) initConnectDomains() {
+	for _, d := range ConnectDomains {
+		d.Register(s.ent, s.router)
+	}
 }
 
 func (s *Server) initVersion() {

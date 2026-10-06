@@ -12,6 +12,7 @@ import (
 	"codeberg.org/gmhafiz/go8/ent/gen/author"
 	"codeberg.org/gmhafiz/go8/ent/gen/book"
 	"codeberg.org/gmhafiz/go8/ent/gen/session"
+	"codeberg.org/gmhafiz/go8/ent/gen/todo"
 	"codeberg.org/gmhafiz/go8/ent/gen/user"
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -79,6 +80,7 @@ func checkColumn(t, c string) error {
 			author.Table:  author.ValidColumn,
 			book.Table:    book.ValidColumn,
 			session.Table: session.ValidColumn,
+			todo.Table:    todo.ValidColumn,
 			user.Table:    user.ValidColumn,
 		})
 	})

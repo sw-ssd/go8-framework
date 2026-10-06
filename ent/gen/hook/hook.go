@@ -45,6 +45,18 @@ func (f SessionFunc) Mutate(ctx context.Context, m gen.Mutation) (gen.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *gen.SessionMutation", m)
 }
 
+// The TodoFunc type is an adapter to allow the use of ordinary
+// function as Todo mutator.
+type TodoFunc func(context.Context, *gen.TodoMutation) (gen.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TodoFunc) Mutate(ctx context.Context, m gen.Mutation) (gen.Value, error) {
+	if mv, ok := m.(*gen.TodoMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *gen.TodoMutation", m)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *gen.UserMutation) (gen.Value, error)

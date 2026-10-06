@@ -2,8 +2,23 @@
 
 package gen
 
+import (
+	"codeberg.org/gmhafiz/go8/ent/gen/todo"
+	"codeberg.org/gmhafiz/go8/ent/schema"
+)
+
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	todoFields := schema.Todo{}.Fields()
+	_ = todoFields
+	// todoDescDone is the schema descriptor for done field.
+	todoDescDone := todoFields[2].Descriptor()
+	// todo.DefaultDone holds the default value on creation for the done field.
+	todo.DefaultDone = todoDescDone.Default.(bool)
+	// todoDescPriority is the schema descriptor for priority field.
+	todoDescPriority := todoFields[3].Descriptor()
+	// todo.DefaultPriority holds the default value on creation for the priority field.
+	todo.DefaultPriority = todoDescPriority.Default.(int)
 }

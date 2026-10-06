@@ -12,10 +12,12 @@ plugins:
   - plugin: connect-go
     out: gen
     opt: paths=source_relative
-  # 前端 TS 產出於 P1.7 再加入（需 protoc-gen-es + protoc-gen-connect-web 本地安裝）：
-  # - plugin: es
-  #   out: web/src/gen
-  #   opt: paths=source_relative
-  # - plugin: connect-web
-  #   out: web/src/gen
-  #   opt: paths=source_relative
+  # 前端 TS 產出：BSR 遠端 plugin（首次下載後快取）。
+  #   - protoc-gen-es         -> buf.build/bufbuild/es           （message 型別）
+  #   - protoc-gen-connect-es -> buf.build/bufbuild/connect-es   （Connect service 客戶端；配合 @connectrpc/connect-web runtime）
+  - plugin: buf.build/bufbuild/es
+    out: web/src/gen
+    opt: paths=source_relative
+  - plugin: buf.build/bufbuild/connect-es
+    out: web/src/gen
+    opt: paths=source_relative
