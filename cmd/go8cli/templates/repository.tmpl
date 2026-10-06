@@ -1,0 +1,136 @@
+package repository
+
+import (
+	"context"
+	"time"
+
+	"entgo.io/ent/dialect/sql"
+
+	"codeberg.org/gmhafiz/go8/ent/gen"
+	ent{{.Name}} "codeberg.org/gmhafiz/go8/ent/gen/{{.Lower}}"
+	"codeberg.org/gmhafiz/go8/internal/domain/{{.Lower}}"
+)
+
+type repository struct {
+	ent *gen.Client
+}
+
+// {{.Name}} is the persistence boundary for the {{.Lower}} resource (ent-backed).
+type {{.Name}} interface {
+	// go8cli:iface
+	Create(ctx context.Context, request *{{.Lower}}.CreateRequest) (*{{.Lower}}.Schema, error)
+	List(ctx context.Context, f *{{.Lower}}.Filter) ([]*{{.Lower}}.Schema, int, error)
+	Read(ctx context.Context, id uint64) (*{{.Lower}}.Schema, error)
+	Update(ctx context.Context, request *{{.Lower}}.UpdateRequest) (*{{.Lower}}.Schema, error)
+	Delete(ctx context.Context, id uint64) error
+}
+
+func New(ent *gen.Client) *repository {
+	return &repository{ent: ent}
+}
+
+// go8cli:impl
+func (r *repository) Create(ctx context.Context, request *{{.Lower}}.CreateRequest) (*{{.Lower}}.Schema, error) {
+	create := r.ent.{{.Name}}.Create()
+{{- range .Fields }}
+	create = create.Set{{.Name}}(request.{{.Name}})
+{{- end }}
+	create = create.SetCreatedAt(time.Now())
+	created, err := create.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toSchema(created), nil
+}
+
+func (r *repository) List(ctx context.Context, f *{{.Lower}}.Filter) ([]*{{.Lower}}.Schema, int, error) {
+	query := r.ent.{{.Name}}.Query()
+{{- range .Fields }}
+{{- if eq .GoType "string" }}
+	if f.{{.Name}} != "" {
+		query = query.Where(ent{{$.Name}}.{{.Name}}Contains(f.{{.Name}}))
+	}
+{{- end }}
+{{- end }}
+	total, err := query.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !f.Base.DisablePaging {
+		query = query.Limit(f.Base.Limit).Offset(f.Base.Offset)
+	}
+	for field, order := range f.Base.Sort {
+		if order == "DESC" {
+			switch field {
+{{- range .Fields }}
+{{- if eq .GoType "string" }}
+			case "{{.Snake}}":
+				query = query.Order(ent{{$.Name}}.By{{.Name}}(sql.OrderDesc()))
+{{- end }}
+{{- end }}
+			}
+		} else {
+			switch field {
+{{- range .Fields }}
+{{- if eq .GoType "string" }}
+			case "{{.Snake}}":
+				query = query.Order(ent{{$.Name}}.By{{.Name}}())
+{{- end }}
+{{- end }}
+			}
+		}
+	}
+	entities, err := query.All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return toSchemas(entities), total, nil
+}
+
+func (r *repository) Read(ctx context.Context, id uint64) (*{{.Lower}}.Schema, error) {
+	entity, err := r.ent.{{.Name}}.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return toSchema(entity), nil
+}
+
+func (r *repository) Update(ctx context.Context, request *{{.Lower}}.UpdateRequest) (*{{.Lower}}.Schema, error) {
+	update := r.ent.{{.Name}}.UpdateOneID(request.ID)
+{{- range .Fields }}
+	update = update.Set{{.Name}}(request.{{.Name}})
+{{- end }}
+	update = update.SetUpdatedAt(time.Now())
+	updated, err := update.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toSchema(updated), nil
+}
+
+func (r *repository) Delete(ctx context.Context, id uint64) error {
+	return r.ent.{{.Name}}.DeleteOneID(id).Exec(ctx)
+}
+
+func toSchema(e *gen.{{.Name}}) *{{.Lower}}.Schema {
+	if e == nil {
+		return nil
+	}
+	return &{{.Lower}}.Schema{
+		ID:        e.ID,
+{{- range .Fields }}
+		{{.Name}}:     e.{{.Name}},
+{{- end }}
+		CreatedAt: e.CreatedAt,
+		UpdatedAt: e.UpdatedAt,
+		DeletedAt: e.DeletedAt,
+	}
+}
+
+func toSchemas(entities []*gen.{{.Name}}) []*{{.Lower}}.Schema {
+	out := make([]*{{.Lower}}.Schema, 0, len(entities))
+	for _, e := range entities {
+		out = append(out, toSchema(e))
+	}
+	return out
+}

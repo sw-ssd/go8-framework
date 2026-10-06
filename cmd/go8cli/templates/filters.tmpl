@@ -1,0 +1,29 @@
+package {{.Lower}}
+
+import (
+	"net/url"
+
+	"codeberg.org/gmhafiz/go8/internal/utility/filter"
+)
+
+type Filter struct {
+	Base filter.Filter
+{{- range .Fields }}
+	{{.Name}} string `json:"{{.Snake}}"`
+{{- end }}
+}
+
+func Filters(queries url.Values) *Filter {
+	f := filter.New(queries)
+{{- range .Fields }}
+	if queries.Has("{{.Snake}}") {
+		f.Search = true
+	}
+{{- end }}
+	return &Filter{
+		Base: *f,
+{{- range .Fields }}
+		{{.Name}}: queries.Get("{{.Snake}}"),
+{{- end }}
+	}
+}

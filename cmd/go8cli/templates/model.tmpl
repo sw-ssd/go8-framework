@@ -1,0 +1,13 @@
+package {{.Lower}}
+
+import "time"
+
+type Schema struct {
+	ID        uint64
+{{- range .Fields }}
+	{{.Name}} {{.GoType}}
+{{- end }}
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
+}

@@ -1,0 +1,109 @@
+package service
+
+import (
+	"context"
+
+	"github.com/go-chi/chi/v5"
+	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	go8v1 "codeberg.org/gmhafiz/go8/gen/api/go8/v1"
+	go8v1connect "codeberg.org/gmhafiz/go8/gen/api/go8/v1/go8v1connect"
+	"codeberg.org/gmhafiz/go8/ent/gen"
+	"codeberg.org/gmhafiz/go8/internal/domain/{{.Lower}}"
+	"codeberg.org/gmhafiz/go8/internal/domain/{{.Lower}}/repository"
+	"codeberg.org/gmhafiz/go8/internal/domain/{{.Lower}}/usecase"
+	"codeberg.org/gmhafiz/go8/internal/utility/filter"
+)
+
+// Service implements the generated {{.Name}}ServiceHandler.
+type Service struct {
+	go8v1connect.Unimplemented{{.Name}}ServiceHandler
+	uc usecase.{{.Name}}
+}
+
+// New builds the {{.Lower}} service (repository -> usecase -> service) from the ent client.
+func New(ent *gen.Client) *Service {
+	return &Service{uc: usecase.New(repository.New(ent))}
+}
+
+// go8cli:impl
+func (s *Service) Create(ctx context.Context, req *connect.Request[go8v1.Create{{.Name}}Request]) (*connect.Response[go8v1.{{.Name}}], error) {
+	schema, err := s.uc.Create(ctx, &{{.Lower}}.CreateRequest{
+{{- range .Fields }}
+		{{.Name}}: {{.ProtoGet}},
+{{- end }}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(toProto(schema)), nil
+}
+
+func (s *Service) Get(ctx context.Context, req *connect.Request[go8v1.Get{{.Name}}Request]) (*connect.Response[go8v1.{{.Name}}], error) {
+	schema, err := s.uc.Read(ctx, uint64(req.Msg.GetId()))
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(toProto(schema)), nil
+}
+
+func (s *Service) List(ctx context.Context, req *connect.Request[go8v1.List{{.Plural}}Request]) (*connect.Response[go8v1.List{{.Plural}}Response], error) {
+	f := &{{.Lower}}.Filter{
+		Base: filter.Filter{
+			Page:    int(req.Msg.GetPage()),
+			Limit:   int(req.Msg.GetPageSize()),
+			Offset:  int(req.Msg.GetPageSize()) * (int(req.Msg.GetPage()) - 1),
+			Search:  req.Msg.GetSearch() != "",
+		},
+{{- range .Fields }}
+		{{.Name}}: req.Msg.GetSearch(),
+{{- end }}
+	}
+	schemas, total, err := s.uc.List(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]*go8v1.{{.Name}}, 0, len(schemas))
+	for _, sc := range schemas {
+		items = append(items, toProto(sc))
+	}
+	return connect.NewResponse(&go8v1.List{{.Plural}}Response{ {{.Plural}}: items, Total: int32(total) }), nil
+}
+
+func (s *Service) Update(ctx context.Context, req *connect.Request[go8v1.Update{{.Name}}Request]) (*connect.Response[go8v1.{{.Name}}], error) {
+	schema, err := s.uc.Update(ctx, &{{.Lower}}.UpdateRequest{
+		ID: uint64(req.Msg.GetId()),
+{{- range .Fields }}
+		{{.Name}}: {{.ProtoGet}},
+{{- end }}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(toProto(schema)), nil
+}
+
+func (s *Service) Delete(ctx context.Context, req *connect.Request[go8v1.Delete{{.Name}}Request]) (*connect.Response[emptypb.Empty], error) {
+	if err := s.uc.Delete(ctx, uint64(req.Msg.GetId())); err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// Register mounts the CONNECT handler on the chi router.
+func Register(ent *gen.Client, r chi.Router, opts ...connect.HandlerOption) {
+	path, handler := go8v1connect.New{{.Name}}ServiceHandler(New(ent), opts...)
+	r.Handle(path, handler)
+}
+
+func toProto(s *{{.Lower}}.Schema) *go8v1.{{.Name}} {
+	return &go8v1.{{.Name}}{
+		Id: int64(s.ID),
+{{- range .Fields }}
+		{{.Name}}: {{.ProtoAssign}},
+{{- end }}
+		CreatedAt: timestamppb.New(s.CreatedAt),
+	}
+}

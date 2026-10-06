@@ -1,0 +1,44 @@
+package usecase
+
+import (
+	"context"
+
+	"codeberg.org/gmhafiz/go8/internal/domain/{{.Lower}}"
+	"codeberg.org/gmhafiz/go8/internal/domain/{{.Lower}}/repository"
+)
+
+// {{.Name}} is the business logic boundary for the {{.Lower}} resource.
+type {{.Name}} interface {
+	// go8cli:iface
+	Create(ctx context.Context, r *{{.Lower}}.CreateRequest) (*{{.Lower}}.Schema, error)
+	List(ctx context.Context, f *{{.Lower}}.Filter) ([]*{{.Lower}}.Schema, int, error)
+	Read(ctx context.Context, id uint64) (*{{.Lower}}.Schema, error)
+	Update(ctx context.Context, r *{{.Lower}}.UpdateRequest) (*{{.Lower}}.Schema, error)
+	Delete(ctx context.Context, id uint64) error
+}
+
+// {{.Name}}UseCase implements {{.Name}} using an ent-backed repository.
+type {{.Name}}UseCase struct {
+	repo repository.{{.Name}}
+}
+
+func New(repo repository.{{.Name}}) *{{.Name}}UseCase {
+	return &{{.Name}}UseCase{repo: repo}
+}
+
+// go8cli:impl
+func (u *{{.Name}}UseCase) Create(ctx context.Context, r *{{.Lower}}.CreateRequest) (*{{.Lower}}.Schema, error) {
+	return u.repo.Create(ctx, r)
+}
+func (u *{{.Name}}UseCase) List(ctx context.Context, f *{{.Lower}}.Filter) ([]*{{.Lower}}.Schema, int, error) {
+	return u.repo.List(ctx, f)
+}
+func (u *{{.Name}}UseCase) Read(ctx context.Context, id uint64) (*{{.Lower}}.Schema, error) {
+	return u.repo.Read(ctx, id)
+}
+func (u *{{.Name}}UseCase) Update(ctx context.Context, r *{{.Lower}}.UpdateRequest) (*{{.Lower}}.Schema, error) {
+	return u.repo.Update(ctx, r)
+}
+func (u *{{.Name}}UseCase) Delete(ctx context.Context, id uint64) error {
+	return u.repo.Delete(ctx, id)
+}

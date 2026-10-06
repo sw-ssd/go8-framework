@@ -6,6 +6,7 @@ import (
 
 	"codeberg.org/gmhafiz/go8/ent/gen"
 	todoService "codeberg.org/gmhafiz/go8/internal/domain/todo/service"
+	// go8cli:imports
 )
 
 // ConnectDomain is a CONNECT service that wires itself given the ent client and router.
@@ -18,4 +19,5 @@ type ConnectDomain struct {
 // ConnectDomains is the registry go8cli appends a line to.
 var ConnectDomains = []ConnectDomain{
 	{Name: "todo", Register: todoService.Register},
+	// go8cli:domains
 }

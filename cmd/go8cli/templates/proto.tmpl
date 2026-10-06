@@ -1,0 +1,50 @@
+syntax = "proto3";
+package go8.v1;
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// go8cli:messages
+message {{.Name}} {
+  int64 id = 1;
+{{- range .Fields }}
+  {{.ProtoType}} {{.Snake}} = {{.ProtoNum}};
+{{- end }}
+  google.protobuf.Timestamp created_at = {{.CreatedAtNum}};
+  google.protobuf.Timestamp updated_at = {{.UpdatedAtNum}};
+  google.protobuf.Timestamp deleted_at = {{.DeletedAtNum}};
+}
+message Create{{.Name}}Request {
+{{- range .Fields }}
+  {{.ProtoType}} {{.Snake}} = {{.CreateNum}};
+{{- end }}
+}
+message Get{{.Name}}Request {
+  int64 id = 1;
+}
+message List{{.Plural}}Request {
+  int32 page = 1;
+  int32 page_size = 2;
+  string search = 3;
+}
+message List{{.Plural}}Response {
+  repeated {{.Name}} {{.PluralLower}} = 1;
+  int32 total = 2;
+}
+message Update{{.Name}}Request {
+  int64 id = 1;
+{{- range .Fields }}
+  {{.ProtoType}} {{.Snake}} = {{.UpdateNum}};
+{{- end }}
+}
+message Delete{{.Name}}Request {
+  int64 id = 1;
+}
+
+service {{.Name}}Service {
+	// go8cli:rpcs
+	rpc Create(Create{{.Name}}Request) returns ({{.Name}});
+	rpc Get(Get{{.Name}}Request) returns ({{.Name}});
+	rpc List(List{{.Plural}}Request) returns (List{{.Plural}}Response);
+	rpc Update(Update{{.Name}}Request) returns ({{.Name}});
+	rpc Delete(Delete{{.Name}}Request) returns (google.protobuf.Empty);
+}

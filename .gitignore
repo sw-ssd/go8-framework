@@ -6,4 +6,4 @@ vendor
 sqlboiler.toml
 tmp
 node_modules
-web/dist
+web/distgo8cli

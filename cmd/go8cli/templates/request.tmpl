@@ -1,0 +1,14 @@
+package {{.Lower}}
+
+type CreateRequest struct {
+{{- range .Fields }}
+	{{.Name}} {{.GoType}} `json:"{{.Snake}}"{{if eq .GoType "string"}} validate:"required"{{end}}`
+{{- end }}
+}
+
+type UpdateRequest struct {
+	ID uint64 `json:"id"`
+{{- range .Fields }}
+	{{.Name}} {{.GoType}} `json:"{{.Snake}}"`
+{{- end }}
+}
