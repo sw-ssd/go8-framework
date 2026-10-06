@@ -294,7 +294,7 @@ task test        # go test ./...
 task test:unit   # go test -short ./...
 ```
 
-Unit tests cover use case and repository with mocks. The `third_party/postgresstore` tests and any integration tests need a live Postgres (start one with podman-compose). End-to-end coverage is provided by the connect service unit tests (proto ↔ domain mapping) plus `go build ./...` and `npm run build` in `web/`.
+Unit tests cover use case and repository with mocks. Integration tests (`internal/domain/authentication`) need a live Postgres (via `ory/dockertest`). Real end-to-end coverage lives in `e2e/` (behind the `e2e` build tag): it spins up a Testcontainers Postgres, runs the API in-process, builds and previews the SolidJS app, and drives the Todo CRUD in a native headless Chromium via Playwright. Run it with `task test:e2e` (`go test -tags e2e ./e2e`). The container runtime is selected via `DOCKER_HOST` (works with Docker or Podman; on Podman also set `TESTCONTAINERS_RYUK_DISABLED=true`). Connect service unit tests additionally cover the proto ↔ domain mapping.
 
 # Build
 
@@ -321,3 +321,28 @@ podman-compose up -d
 # Acknowledgements
 
 Based on [gmhafiz/go8](https://codeberg.org/gmhafiz/go8). CONNECT RPC by [connectrpc](https://connectrpc.com).
+
+## Testing
+
+Unit tests cover use cases and repositories with mocks (`internal/domain/.../service/*_test.go`). There is **no real e2e in `go test ./...`** — the e2e suite sits behind the `//go:build e2e` tag so it does not pull Docker/Playwright.
+
+Run the full web+API e2e:
+
+```shell
+# Podman (needs the socket + ryuk disabled: Podman lacks the bridge network ryuk requires)
+export DOCKER_HOST=unix:///run/podman/podman.sock
+TESTCONTAINERS_RYUK_DISABLED=true task test:e2e
+
+# Docker
+task test:e2e
+```
+
+The e2e spins up Postgres via testcontainers, runs the API in-process (`server.New→Init→Migrate` then `Run` on `0.0.0.0:8080`), builds the web with `VITE_API_BASE` baked in and serves it with `vite preview` on :3000, then drives the Todo CRUD page with a NATIVE headless Chromium via playwright-go. It does NOT use a containerized browser — see Constraints.
+
+## Constraints
+
+- **Env vars are `NEWAPI_*`** (`envconfig` prefix `NewAPI`): `NEWAPI_PORT` (default 3080), `NEWAPI_HOST`, `DB_*`, `CORS_ALLOWED_ORIGINS`, `API_RUN_SWAGGER`. `env.example`'s `API_PORT` is wrong and ignored.
+- **Migrations** (`database/migrations`) use goose: `-- +goose Up/Down` wrapping SQL in `-- +goose StatementBegin/End`; version = unique timestamp prefix. `goose` panics on duplicate versions or unparsed SQL.
+- **CONNECT health** is `GET /api/health` → `{"status":200}` (not `/health`).
+- **CONNECT routing**: register with `r.Handle(path+"*", handler)` where `path` ends in `/`; `r.Handle(path, handler)` strips the prefix and 404s every method.
+- **Browser for e2e is native** (playwright-go on the host). Containerized browsers do not work for this SPA: Chromium binds its debug port to `127.0.0.1`; Lightpanda (`lightpanda/browser:nightly`) binds `0.0.0.0` but does not render the Vite/SolidJS ES-module app (DOM stays an empty `div#root`). chromedp was also verified to return an empty DOM. Keep the browser native.

@@ -1,0 +1,21 @@
+# go8-framework — LLM index
+
+Go + Postgres API starter extended with CONNECT RPC (connect-go) and `go8cli` codegen. Reference SolidJS web app in `web/`. Chi is infra-only; business domains are CONNECT services over ent/sqlx repos.
+
+## Key facts
+- Env config prefix is `NewAPI` → real vars are `NEWAPI_*` (e.g. `NEWAPI_PORT`, default 3080). `env.example`'s `API_PORT` is wrong/ignored.
+- Migrations: goose SQL in `database/migrations`; must use `-- +goose Up/Down` + `StatementBegin/End`; unique version prefixes.
+- Health: `GET /api/health` → `{"status":200}` (not `/health`).
+- CONNECT routing: `r.Handle(path+"*", handler)` (path ends `/`); `r.Handle(path, handler)` 404s.
+- e2e: Postgres via testcontainers (Docker/Podman) + in-process API + `vite preview` web + NATIVE Playwright Chromium on host. Run `task test:e2e` with `DOCKER_HOST` + `TESTCONTAINERS_RYUK_DISABLED=true` on Podman.
+- Containerized browsers do NOT work for this SPA: Chromium binds 127.0.0.1 CDP; Lightpanda does not render the Vite/SolidJS ES-module SPA (empty DOM); chromedp also fails. Use native Chromium only.
+
+## Pointers
+- Server: `internal/server/server.go` (`Server`, `Init`, `Migrate`, `Run`, `Shutdown`).
+- Domain registry: `internal/server/domains.go`.
+- CONNECT services: `internal/domain/<name>/service/`.
+- Codegen CLI: `cmd/go8cli/` + templates.
+- e2e: `e2e/e2e_test.go` (`//go:build e2e`).
+- Migrations: `database/migrations/`.
+- Agent guide: `AGENTS.md`.
+- User guide: `README.md`.
