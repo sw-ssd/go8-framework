@@ -1,60 +1,58 @@
-# 實作計畫：Go8 CONNECT RPC + SolidJS 前端 + go8cli（放棄 DREL，保留 ent/sqlx）
+# 實作計畫：Go8 CONNECT RPC + SolidJS 前端 + go8cli（放棄 DREL，保留 ent/sqlx，支援客製 templates/commands）
 
 日期：2026-10-06
 對應設計：docs/superpowers/specs/2026-10-06-go8-connect-drel-cli-design.md
-修訂：放棄 DREL，資料層保留 ent/sqlx；go8cli 細分 model/create/read/update/delete/resource 子命令，互動+非互動。
-採用方案：A（垂直切片 `todo` 先行 → go8cli 模板化 → 對 `author`/`book` 套用達成全面替換 chi handler）
+修訂：放棄 DREL，資料層保留 ent/sqlx；go8cli 細分 model/create/read/update/delete/resource 子命令（互動+非互動）；go8cli 支援客製 templates 與 commands（檔案型，免重編譯）。
+採用方案：A（垂直切片 todo 先行 → go8cli 模板化 → 對 author/book 套用達成全面替換 chi handler）
 
 ## Scope Check
 
-設計含 3 子系統（buf/connect 後端、SolidJS 前端、go8cli），但彼此經「切片 → 模板」耦合，且已自拆為 P0–P4，每階段皆產出可獨立驗證的軟體。採**單一計畫、階段化任務**。
+設計含 3 子系統（buf/connect 後端、SolidJS 前端、go8cli）+ go8cli 擴充性，但彼此經「切片 → 模板」耦合，且已自拆為 P0–P4，每階段皆產出可獨立驗證的軟體。採**單一計畫、階段化任務**。
 
 工程師假設：熟悉 Go 與前端，但不熟 buf/connect/TanStack/SolidJS/cobra。本計畫寫足工具安裝、指令、檔案職責、程式碼骨架、測試與驗證。
 
 ## 工具鏈安裝（P0 前置）
 
-- **buf**（proto 管理 + 程式碼生成）：
-  `go install github.com/bufbuild/buf/cmd/buf@latest`（或 `brew install bufbuild/buf/buf`）。驗證：`buf --version`。
-- **connect-go**（後端依賴，go get）：
-  `github.com/connectrpc/connect-go`、`google.golang.org/protobuf`。
-- **ent**（既有，確認可生成）：`go generate ./ent` 已可用（既有 `ent/generate.go`）。
-- **前端**（npm）：Node 18+。`cd web && npm init -y` 後安裝依賴（見 §前端任務）。
+- **buf**：`go install github.com/bufbuild/buf/cmd/buf@latest`（或 `brew install bufbuild/buf/buf`）。驗證：`buf --version`。
+- **connect-go**：`github.com/connectrpc/connect-go`、`google.golang.org/protobuf`（go get）。
+- **ent**：既有 `go generate ./ent` 已可用。
+- **前端**：Node 18+。`cd web && npm init -y` 後安裝依賴（見 §前端任務）。
 - **Taskfile**：既有 `Taskfile.yml` 擴充 `gen` 目標串接 `buf generate`。
-- **go8cli 互動**：用 `github.com/spf13/cobra` + `github.com/manifoldco/promptui`（或標準 `bufio` 讀 TTY）做互動提示；非互動走 cobra flags。
+- **go8cli**：cobra（命令框架）+ promptui（互動提示）+ `text/template` + `//go:embed`（內嵌預設模板）。使用者客製模板/命令走檔案（見 T2.4/T2.5），不需重編譯。
 
 ## File Structure（本計畫觸及的檔案與職責）
 
 新增：
-- `buf.yaml` — buf 模組、deps（googleapis、connect）、lint/breaking。
-- `buf.gen.yaml` — 生成 go + connect-go（→ `gen/`）+ connect-web/es（→ `web/src/gen`）。
-- `api/go8/v1/todo.proto` — 參考 domain 的 proto（後續由 CLI 複製此模式）。
+- `buf.yaml` / `buf.gen.yaml` — buf 模組與生成設定。
+- `api/go8/v1/todo.proto` — 參考 domain 的 proto。
 - `gen/go8/v1/todo.pb.go`、`todo.connect.go` — buf 生成（納入版控）。
-- `ent/schema/todo.go` — todo 的 ent schema（CLI `model` 子命令新增）。
+- `ent/schema/todo.go` — todo 的 ent schema（CLI model 子命令新增）。
 - `internal/domain/todo/{service,usecase,repository,model.go,request.go,resource.go}` — 切片實作（repository 用 ent）。
 - `internal/server/domains.go` — 已註冊 domain 清單（註冊表模式）。
-- `web/` — SolidJS 參考 app（package.json、vite.config、src/gen、src/lib、src/features/todo、src/routes）。
-- `cmd/go8cli/` — 程式碼生成 CLI（main.go + `templates/` 內嵌）。
-- `database/migrations/0000xx_todo.up.sql` / `.down.sql` — todo 的 goose migration（ent DDL 來源）。
+- `web/` — SolidJS 參考 app。
+- `cmd/go8cli/` — 程式碼生成 CLI（main.go + `templates/` 內嵌預設 + 模板解析/命令 manifest 邏輯）。
+- `database/migrations/0000xx_todo.up.sql` / `.down.sql` — todo 的 goose migration。
+- `.go8/templates/` — 使用者客製 .tmpl（覆寫內建或新增；可選，可不納入版控）。
+- `.go8/commands/<cmd>.yaml` — 使用者客製命令 manifest（可選）。
 
 修改：
 - `internal/server/server.go` — 啟動時迭代 `domains.go` 掛載 connect handler（注入 ent client 等依賴）。
-- `internal/server/initDomains.go` — 改為迭代 `domains.go` 清單（不再逐一 `initX()`）。
-- `go.mod` — 加 connect-go、protobuf（若未含）；加 cobra/promptui（go8cli）。
+- `internal/server/initDomains.go` — 改為迭代 `domains.go` 清單。
+- `go.mod` — 加 connect-go、protobuf、cobra、promptui。
 - `Taskfile.yml` — 加 `gen` 目標（`buf generate`）。
 - `ent/gen/` — 因新增 schema 重新生成（既有流程）。
 
-P3 刪除（clean cutover，僅刪 chi handler，**保留 ent/sqlx**）：
-- `internal/domain/author/handler/*`、`internal/domain/author/handler/register.go`。
-- `internal/domain/book/handler/*`、`internal/domain/book/handler/register.go`。
-- 其餘 `author`/`book` 的 usecase/repository（ent/sqlx）保留不動。
+P3 刪除（clean cutover，僅刪 chi handler，保留 ent/sqlx）：
+- `internal/domain/author/handler/*` 與 `register.go`。
+- `internal/domain/book/handler/*` 與 `register.go`。
+- author/book 的 usecase/repository（ent/sqlx）保留不動。
 
 ## 任務（依階段）
 
 ### P0 — 工具鏈與 buf 配置
 
 **T0.1 安裝 buf**
-- 步驟：安裝 buf（見上）。`buf --version` 確認可用。
-- 驗證：印出版本。
+- 安裝 buf（見上）。`buf --version` 確認可用。
 
 **T0.2 建立 buf 配置**
 - `buf.yaml`：
@@ -183,9 +181,9 @@ P3 刪除（clean cutover，僅刪 chi handler，**保留 ent/sqlx**）：
 
 **T1.8 P1 驗收**
 - 驗證序列：`task gen` → `go generate ./ent` → `go build ./...` → `cmd/migrate` → 啟動 server → `curl` Create/List 回 JSON → `cd web && npm run build` 通過 → 前端列表頁渲染。
-- 提交：`git commit` P1 全部（訊息 `feat: todo vertical slice (connect+ent+solidjs)`）。
+- 提交：`feat: todo vertical slice (connect+ent+solidjs)`。
 
-### P2 — go8cli 程式碼生成（細分子命令，互動+非互動）
+### P2 — go8cli 程式碼生成（細分子命令，互動+非互動，支援客製）
 
 **T2.1 CLI 骨架**
 - `cmd/go8cli/main.go`：cobra root + `generate` 子命令；`generate` 下掛 `model`/`create`/`read`/`update`/`delete`/`resource`。
@@ -197,20 +195,31 @@ P3 刪除（clean cutover，僅刪 chi handler，**保留 ent/sqlx**）：
 - 驗證：`go build ./cmd/go8cli`。
 
 **T2.3 generate resource / 各層子命令**
-- `go8cli generate resource <name> [--field ...]` 依序呼叫 `model`+`create`+`read`+`update`+`delete`：
+- `go8cli generate resource <name> [--field ...]` 依序呼叫 model+create+read+update+delete：
   - `model`：渲染 `ent/schema/<name>.go` + 觸發 `go generate ./ent` + 新增 goose migration + 產 `model.go`。
-  - `create`/`read`/`update`/`delete`：分別渲染 proto 的對應 rpc（首次建整個 service 骨架，之後增量追加）、service 方法、usecase 方法、repository 方法、前端頁/元件。
+  - `create`/`read`/`update`/`delete`：分別渲染 proto 對應 rpc（首次建整個 service 骨架，之後增量追加）、service 方法、usecase 方法、repository 方法、前端頁/元件。
   - 在 `internal/server/domains.go` 的 `Domains` slice 追加一行（結構化替換）。
 - 增量驗證：`go8cli generate resource widget` → `task gen` → `go build ./...` 通過 → server 啟動後 widget 端點可用 → `cd web && npm run build` 通過。
 - 增量加層驗證：`go8cli generate delete widget`（假設 resource 已含 C/R/U）後 `go build ./...` 仍通過，且 widget service 含 Delete。
 - 互動驗證：`go8cli generate resource thing`（無 flag，TTY）能依提示完成生成並編譯。
 - 提交：`feat: go8cli generate (model/create/read/update/delete/resource, interactive+non-interactive)`。
 
+**T2.4 客製 templates（檔案型）**
+- 模板解析：內嵌預設 → 使用者目錄（`.go8/templates`，或 `--templates <dir>` / `GO8_TEMPLATES`）。同名使用者模板優先。
+- 新增 `go8cli generate <name>` 通用渲染：對任意 `.tmpl`（內建或使用者目錄）以相同變數上下文（`Name`、`Fields` 等）渲染；使用者新增的 `.tmpl` 直接可被渲染（免重編譯）。
+- 驗證：在 `.go8/templates/` 放 `hello.go.tmpl`，執行 `go8cli generate hello --name Foo` 產出預期檔；`--templates ''` 時忽略使用者目錄、只用內建。
+
+**T2.5 客製 commands（manifest）**
+- 讀取 `.go8/commands/<cmd>.yaml`（結構見設計 §9.1）：`name`/`description`/`prompts`/`steps`（`template`+`out`+`mode` 或 `shell`）。
+- `go8cli <cmd>`（或 `go8cli run <cmd>`）依序執行 steps：渲染模板到 `out`（create/append），或執行 `shell`。`prompts` 在非互動時由 `--<name>` flag / 環境變數提供；非 TTY 缺值則報錯退出。
+- 驗證：放 `.go8/commands/greeter.yaml`，執行 `go8cli greeter --label Hi` 產出 greeter 檔並（若有 shell 步）執行；非互動可於 CI 呼叫。
+- 提交：`feat: go8cli extensibility (custom templates + command manifests)`。
+
 ### P3 — 全面替換 author/book 的 chi handler（保留 ent/sqlx）
 
 **T3.1 對 author 套用 CLI**
 - `go8cli generate resource author`（欄位對齊現有 `author/model.go`）。
-- 比對新 `usecase` 與舊 `author/usecase` 業務邏輯（搜尋/快取），把 `searchRepo`/`cacheRedis`/`cacheLRU` 邏輯遷入新 usecase（或保留為新 usecase 的可選依賴）。
+- 比對新 usecase 與舊 `author/usecase` 業務邏輯（搜尋/快取），把 `searchRepo`/`cacheRedis`/`cacheLRU` 邏輯遷入新 usecase（或保留為新 usecase 的可選依賴）。
 - 刪除 `internal/domain/author/handler/*` 與 `register.go`。
 - 驗證：`go build ./...`；author connect 端點可用；舊 `/authors` chi REST 路徑不存在。
 
@@ -235,19 +244,21 @@ P3 刪除（clean cutover，僅刪 chi handler，**保留 ent/sqlx**）：
 - 後端：每 domain repository 單元測試用 dockertest Postgres（仿 `author/repository/postgres_test.go`）；usecase 測試用 mirip 產的 mock（`//go:generate mirip` 既有模式保留）。
 - 前端：關鍵資料獲取用 `@tanstack/solid-query` 的 `QueryClient` 單元測試或元件測試（輕量，YAGNI：僅 list/create 一組）。
 - 整合：P1/P2/P3 每階段以 `curl` connect JSON 端點作冒煙（非僅編譯）。
+- go8cli：T2.4/T2.5 的客製模板與命令以實際 `go8cli` 執行驗證（產出可編譯/可執行）。
 - 不寫：純轉發/mock 回聲/來源文字的重複測試。
 
 ## 提交節奏
 
 - P0 完成：`chore: add buf toolchain and config`
 - P1 完成：`feat: todo vertical slice (connect+ent+solidjs)`
-- P2 完成：`feat: go8cli generate (model/create/read/update/delete/resource, interactive+non-interactive)`
+- P2 完成：`feat: go8cli generate (model/create/read/update/delete/resource, interactive+non-interactive)` + `feat: go8cli extensibility (custom templates + command manifests)`
 - P3 完成：`feat: migrate author/book handlers to connect, keep ent/sqlx repos`
 - P4 完成：`feat: web reference app wired to all connect resources`
 
-## 風險與因應（詳設計 §11）
+## 風險與因應
 
 - ent 程式碼生成納入 CLI：`model` 子命令產 ent schema 並觸發 `go generate ./ent`；`task gen` 串接 `buf generate`。
 - connect 與 chi 中介相容：connect handler 掛 chi 即可沿用 CORS/OTel/auth。
 - CLI 模板漂移：模板源自 P1 切片，CLI 產出須通過相同編譯/冒煙。
-- 互動模式 CI 行為：非 TTY 缺 flag 即報錯退出，確保 CI 可重現。
+- 互動模式 CI 行為：非 TTY 缺 flag/prompt 即報錯退出，確保 CI 可重現。
+- 使用者模板覆寫內建：解析順序明確（使用者優先）；`--templates ''` 強制只用內建。
